@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-6 offset-md-3">
+            <h2>Editar Stock: {{ stock.codigo_repuesto }} - {{ ubicacion }}</h2>
+            
+            <div class="card">
+                <div class="card-body">
+                    <p><strong>Código:</strong> {{ stock.codigo_repuesto }}</p>
+                    <p><strong>Ubicación:</strong> {{ ubicacion }}</p>
+                    
+                    <form method="POST">
+                        {% if user.role == 'ADMIN' %}
+                        <div class="alert alert-info">Solo ADMIN: ingresa la contraseña para editar stock.</div>
+                        <div class="form-group">
+                            <label for="admin_password">Contraseña de administrador:</label>
+                            <input type="password" class="form-control" id="admin_password" name="admin_password" required placeholder="ADMIN2024">
+                        </div>
+                        {% else %}
+                        <div class="alert alert-success">
+                            <strong>✅ Autorizado:</strong> Puedes editar stock de {{ ubicacion }}.
+                        </div>
+                        {% endif %}
+
+                        <div class="form-group">
+                            <label for="cantidad">Cantidad en Stock:</label>
+                            <input type="number" class="form-control" id="cantidad" name="cantidad" 
+                                   value="{{ stock.cantidad }}" required min="0">
+                        </div>
+                        
+                        <button type="submit" class="btn btn-success">Actualizar</button>
+                        <a href="{{ url_for('stock_list') }}" class="btn btn-secondary">Cancelar</a>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

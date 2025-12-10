@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+
+{% block title %}RAYPAC - Listado{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-6">
+            <h2>Ingresos RAYPAC</h2>
+        </div>
+        <div class="col-md-6 text-right">
+            {% if session.get('user_id') %}
+            <a class="btn btn-success" href="{{ url_for('raypac_new') }}">
+                <i class="fas fa-plus"></i> Nuevo Ingreso
+            </a>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover table-striped">
+            <thead class="table-dark">
+                <tr>
+                    <th>ID</th>
+                    <th>Fecha Recepción</th>
+                    <th>Tipo</th>
+                    <th>Cliente</th>
+                    <th>Serie</th>
+                    <th>Modelo</th>
+                    <th>Comercial</th>
+                    <th>Remito</th>
+                    <th>Estado</th>
+                    <th>Ficha ST</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for entry in entries %}
+                <tr>
+                    <td style="color: black;"><strong>#{{ entry.id }}</strong></td>
+                    <td style="color: black;">{{ entry.fecha_recepcion }}</td>
+                    <td><span class="badge" style="background-color: #17a2b8; color: black; font-size: 12px;">{{ entry.tipo_solicitud }}</span></td>
+                    <td style="color: black;">{{ entry.cliente }}</td>
+                    <td style="color: black;"><code>{{ entry.numero_serie }}</code></td>
+                    <td style="color: black;">{{ entry.modelo_maquina }}</td>
+                    <td style="color: black;">{{ entry.comercial }}</td>
+                    <td style="color: black;">{{ entry.numero_remito or '-' }}</td>
+                    <td>
+                        {% if entry.is_frozen %}
+                        <span class="badge" style="background-color: #6c757d; color: black; font-size: 12px;">FREEZADO</span>
+                        {% else %}
+                        <span class="badge" style="background-color: #ffc107; color: black; font-size: 12px;">Editable</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if entry.fichas_count and entry.fichas_count > 0 %}
+                            <span class="badge" style="background-color: #28a745; color: white; font-size: 12px;">Creada</span>
+                        {% elif entry.is_frozen %}
+                            <a href="{{ url_for('dml_new', raypac_id=entry.id) }}" class="btn btn-sm btn-success">Crear Ficha</a>
+                        {% else %}
+                            <span class="badge" style="background-color: #ffc107; color: black; font-size: 12px;">Pendiente</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <a href="{{ url_for('raypac_view', id=entry.id) }}" class="btn btn-sm btn-info">Ver</a>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if not entries %}
+    <div class="alert alert-info">
+        No hay ingresos RAYPAC registrados.
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

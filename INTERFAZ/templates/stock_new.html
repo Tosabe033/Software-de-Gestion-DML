@@ -1,0 +1,46 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-6 offset-md-3">
+            <h2>Nuevo Repuesto - {{ ubicacion }}</h2>
+            
+            <form method="POST">
+                {% if user.role == 'ADMIN' %}
+                <div class="alert alert-info">Solo ADMIN: ingresa la contraseña para agregar códigos nuevos.</div>
+
+                <div class="form-group">
+                    <label for="admin_password">Contraseña de administrador:</label>
+                    <input type="password" class="form-control" id="admin_password" name="admin_password" required placeholder="ADMIN2024">
+                </div>
+                {% else %}
+                <div class="alert alert-success">
+                    <strong>✅ Autorizado:</strong> Puedes agregar repuestos al stock de {{ ubicacion }}.
+                </div>
+                {% endif %}
+
+                <div class="form-group">
+                    <label for="codigo_repuesto">Código (SKU):</label>
+                    <input type="text" class="form-control" id="codigo_repuesto" name="codigo_repuesto" required placeholder="ej. A000006">
+                </div>
+                
+                <div class="form-group">
+                    <label for="item">Descripción:</label>
+                    <input type="text" class="form-control" id="item" name="item" required 
+                           placeholder="ej. HT TENSION MOTOR GROUP">
+                </div>
+                
+                <div class="form-group">
+                    <label for="cantidad">Cantidad Inicial:</label>
+                    <input type="number" class="form-control" id="cantidad" name="cantidad" 
+                           value="0" required min="0">
+                </div>
+                
+                <button type="submit" class="btn btn-success">Crear Repuesto</button>
+                <a href="{{ url_for('stock_list') }}" class="btn btn-secondary">Cancelar</a>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

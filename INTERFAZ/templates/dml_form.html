@@ -1,0 +1,72 @@
+{% extends "base.html" %}
+
+{% block title %}DML - Nueva Ficha{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-10 offset-md-1">
+            <h2>Nueva Ficha de Servicio Técnico DML</h2>
+            
+            {% if raypac %}
+            <div class="alert alert-info">
+                <strong>RAYPAC Origen:</strong> 
+                Cliente: {{ raypac.cliente }} | 
+                Serie: {{ raypac.numero_serie }} | 
+                Modelo: {{ raypac.modelo_maquina }}
+            </div>
+            {% endif %}
+
+            <form method="POST" class="needs-validation">
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h5 class="mb-0">Información General</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="fecha_ingreso" class="form-label">Fecha Ingreso DML *</label>
+                                <input type="date" class="form-control" id="fecha_ingreso" name="fecha_ingreso" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="tecnico" class="form-label">Técnico Responsable *</label>
+                                <input type="text" class="form-control" id="tecnico" name="tecnico" required>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label for="diagnostico_inicial" class="form-label">Diagnóstico Inicial</label>
+                                <textarea class="form-control" id="diagnostico_inicial" name="diagnostico_inicial" rows="3"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-12">
+                                <label for="observaciones" class="form-label">Observaciones</label>
+                                <textarea class="form-control" id="observaciones" name="observaciones" rows="3"></textarea>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <label for="n_ciclos" class="form-label">N° de Ciclos</label>
+                                <input type="number" class="form-control" id="n_ciclos" name="n_ciclos">
+                            </div>
+                            <div class="col-md-6">
+                                <label for="tecnico_resp" class="form-label">Técnico ST Responsable *</label>
+                                <input type="text" class="form-control" id="tecnico_resp" name="tecnico_resp" required>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                    <a href="{{ url_for('raypac_list') }}" class="btn btn-secondary">Cancelar</a>
+                    <button type="submit" class="btn btn-primary btn-lg">Crear Ficha</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}

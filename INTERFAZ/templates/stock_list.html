@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row">
+        <div class="col-md-12">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2>Stock {{ ubicacion }}</h2>
+                {% if ubicaciones_disponibles %}
+                <div class="btn-group" role="group">
+                    {% for ubi in ubicaciones_disponibles %}
+                    <a href="{{ url_for('stock_list', ubicacion=ubi) }}" 
+                       class="btn btn-{{ 'primary' if ubi == ubicacion else 'outline-primary' }}">
+                        {{ ubi }}
+                    </a>
+                    {% endfor %}
+                </div>
+                {% endif %}
+            </div>
+            
+            {% if user.role in ['ADMIN', 'DML_REPUESTOS', 'RAYPAC'] %}
+            <div class="d-flex gap-2 mb-3">
+                <a href="{{ url_for('stock_new', ubicacion=ubicacion) }}" class="btn btn-success">+ Nuevo Repuesto</a>
+                {% if user.role in ['ADMIN', 'DML_REPUESTOS'] %}
+                <a href="{{ url_for('estadisticas') }}" class="btn btn-info">📊 Estadísticas de uso</a>
+                {% endif %}
+            </div>
+            {% endif %}
+            
+            {% if user.role == 'ADMIN' %}
+            <div class="alert alert-warning py-2">
+                <strong>⚠️ ADMIN:</strong> Altas/ediciones requieren contraseña.
+            </div>
+            {% endif %}
+            
+            <!-- Formulario de búsqueda -->
+            <form method="GET" class="mb-3">
+                <div class="input-group">
+                    <input type="text" name="buscar" class="form-control" placeholder="Buscar por código o descripción..." value="{{ request.args.get('buscar', '') }}">
+                    <input type="hidden" name="ubicacion" value="{{ ubicacion }}">
+                    <button type="submit" class="btn btn-primary">🔍 Buscar</button>
+                    {% if request.args.get('buscar') %}
+                    <a href="{{ url_for('stock_list', ubicacion=ubicacion) }}" class="btn btn-secondary">Limpiar</a>
+                    {% endif %}
+                </div>
+            </form>
+            
+            {% if rows %}
+            <table class="table table-striped table-hover">
+                <thead>
+                    <tr>
+                        <th>Código</th>
+                        <th>Descripción</th>
+                        <th>Cantidad</th>
+                        <th>Estado</th>
+                        {% if user.role in ['ADMIN', 'DML_REPUESTOS', 'RAYPAC'] %}
+                        <th>Acciones</th>
+                        {% endif %}
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for row in rows %}
+                    <tr>
+                        <td><strong>{{ row.codigo_repuesto }}</strong></td>
+                        <td><span style="color: black;">{{ row.item or 'N/A' }}</span></td>
+                        <td class="text-center">
+                            <strong style="color: black;">{{ row.cantidad }}</strong>
+                        </td>
+                        <td>
+                            {{ get_alert_badge(row.codigo_repuesto, row.ubicacion) | safe }}
+                        </td>
+                        {% if user.role in ['ADMIN', 'DML_REPUESTOS', 'RAYPAC'] %}
+                        <td>
+                            <a href="{{ url_for('stock_edit', codigo=row.codigo_repuesto, ubicacion=ubicacion) }}" class="btn btn-sm btn-primary">Editar</a>
+                            {% if user.role == 'ADMIN' %}
+                            <form method="POST" action="{{ url_for('stock_delete', codigo=row.codigo_repuesto, ubicacion=ubicacion) }}" style="display:inline-block; width:180px;">
+                                <input type="password" name="admin_password" class="form-control form-control-sm mb-1" placeholder="Contraseña" required>
+                                <button type="submit" class="btn btn-sm btn-danger w-100" onclick="return confirm('¿Eliminar este repuesto?')">Eliminar</button>
+                            </form>
+                            {% endif %}
+                        </td>
+                        {% endif %}
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+            {% else %}
+            <div class="alert alert-info">No hay repuestos en stock.</div>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

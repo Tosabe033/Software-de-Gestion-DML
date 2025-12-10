@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+
+{% block title %}Login - DML ST{% endblock %}
+
+{% block content %}
+<div class="container d-flex justify-content-center align-items-center min-vh-100">
+  <div class="col-md-5">
+    <div class="card shadow-lg border-0">
+      <div class="card-header bg-primary text-white text-center py-4">
+        <h2 class="mb-0">🔧 DML Servicios Técnicos</h2>
+        <small>Sistema de Gestión ST & Repuestos</small>
+      </div>
+      <div class="card-body p-5">
+        <form method="POST">
+          <div class="mb-4">
+            <label for="email" class="form-label"><i class="bi bi-envelope"></i> Email</label>
+            <input type="email" class="form-control form-control-lg" id="email" name="email" 
+                   placeholder="tu@email.com" required autofocus>
+          </div>
+          
+          <div class="mb-4">
+            <label for="password" class="form-label"><i class="bi bi-lock"></i> Contraseña</label>
+            <input type="password" class="form-control form-control-lg" id="password" name="password" 
+                   placeholder="Ingresa tu contraseña" required>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-lg w-100">
+            Ingresar al Sistema
+          </button>
+        </form>
+
+        <hr class="my-4">
+        
+        <div class="alert alert-info small" role="alert">
+          <strong>Usuarios de prueba:</strong><br>
+          <code>admin@dml.local</code> / <strong>admin</strong> (ADMIN)<br>
+          <code>raypac@dml.local</code> / <strong>raypac</strong> (RAYPAC)<br>
+          <code>tecnico@dml.local</code> / <strong>tecnico</strong> (DML_ST)<br>
+          <code>repuestos@dml.local</code> / <strong>repuestos</strong> (DML_REPUESTOS)
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,51 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+  <div class="d-flex justify-content-between align-items-center mb-3">
+    <h2 class="mb-0">Envíos de repuestos RAYPAC a DML</h2>
+    {% if get_current_user() and get_current_user()['role'] in ['ADMIN', 'RAYPAC'] %}
+    <a class="btn btn-success" href="{{ url_for('envios_new') }}"><i class="bi bi-plus-circle"></i> Nuevo envío</a>
+    {% endif %}
+  </div>
+
+  {% if envios %}
+  <table class="table table-hover align-middle">
+    <thead>
+      <tr>
+        <th>Remito</th>
+        <th>Fecha envío</th>
+        <th>Fecha recepción</th>
+        <th>Estado</th>
+        <th>Items</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for envio in envios %}
+      <tr>
+        <td><strong>{{ envio.numero_remito }}</strong></td>
+        <td>{{ envio.fecha_envio }}</td>
+        <td>{{ envio.fecha_recepcion or '-' }}</td>
+        <td>
+          {% if envio.estado == 'PENDIENTE' %}
+          <span class="badge bg-warning text-dark">Pendiente</span>
+          {% else %}
+          <span class="badge bg-success">Recibido</span>
+          {% endif %}
+        </td>
+        <td>{{ envio.items_count }}</td>
+        <td class="text-end">
+          <a class="btn btn-sm btn-outline-primary" href="{{ url_for('envios_view', id=envio.id) }}">
+            <i class="bi bi-eye"></i> Ver
+          </a>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+  {% else %}
+  <div class="alert alert-info">No hay envíos registrados.</div>
+  {% endif %}
+</div>
+{% endblock %}
