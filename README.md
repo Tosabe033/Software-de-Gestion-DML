@@ -8,46 +8,64 @@ Sistema integral de gestión para reparación de equipos RAYPAC y mantenimiento 
 
 ---
 
-## 🚀 INICIO RÁPIDO
+## ☁️ DEPLOYMENT EN PRODUCCIÓN
 
-### Paso 1: Activa el entorno virtual
-```powershell
-cd c:\Users\Andrea\Downloads\dml_sgtec_v3
-& .\venv\Scripts\Activate.ps1
-```
+### Opción 1: Render.com (Recomendado)
+1. Ir a https://render.com y crear cuenta
+2. Conectar GitHub
+3. Crear Web Service
+4. Build: `pip install -r requirements-production.txt`
+5. Start: `gunicorn --chdir CODIGO_FUENTE --bind 0.0.0.0:$PORT app:app`
+6. Configurar variables de entorno
+7. ¡Deploy automático en 5-10 minutos!
 
-### Paso 2: Inicia el servidor
-```powershell
-python app.py
-```
+**📖 Guía detallada:** [DEPLOYMENT_RENDER.md](./DEPLOYMENT_RENDER.md)
 
-### Paso 3: Abre el navegador
-```
-http://localhost:5000
-```
+### Opción 2: Railway.app
+Similar a Render, más rápido de configurar.
 
-### Paso 4: Login
-```
-Usuario: admin
-Contraseña: admin123
-```
+### Opción 3: PythonAnywhere
+Para pequeñas aplicaciones, más manual.
 
-**¡Listo! Explora el sistema.**
+**📖 Instalación y Deployment:** [INSTALL_AND_DEPLOY.md](./INSTALL_AND_DEPLOY.md)
 
 ---
 
-## 📚 DOCUMENTACIÓN PRINCIPAL
+## 🚀 INICIO RÁPIDO LOCAL
 
-### 🎯 Comienza aquí:
-- **[PORTADA.md](./PORTADA.md)** - Inicio rápido (2 min)
-- **[RESUMEN_EJECUTIVO.md](./RESUMEN_EJECUTIVO.md)** - Para tribunal (5 min)
+### Requisitos Previos
+- Python 3.7+
+- Git instalado
 
-### 🎬 Para demostración:
-- **[GUIA_DEMOSTRACION.md](./GUIA_DEMOSTRACION.md)** - Paso a paso cada feature
-- **[CHECKLIST_PRE_PRESENTACION.md](./CHECKLIST_PRE_PRESENTACION.md)** - Verificación pre-tribunal
+### Instalación en 5 minutos
+```bash
+# 1. Clonar repositorio
+git clone https://github.com/Tosabe033/Software-de-Gestion-DML.git
+cd Software-de-Gestion-DML
 
-### 🏗️ Para técnicos:
-- **[ARQUITECTURA_TECNICA.md](./ARQUITECTURA_TECNICA.md)** - Diseño BD, API, flujos
+# 2. Crear entorno virtual
+python -m venv venv
+
+# 3. Activar entorno (Windows)
+.\venv\Scripts\Activate.ps1
+
+# Linux/Mac:
+source venv/bin/activate
+
+# 4. Instalar dependencias
+pip install -r requirements.txt
+
+# 5. Cargar datos de prueba
+python seed_data_minimal.py
+
+# 6. Iniciar servidor
+python CODIGO_FUENTE/app.py
+```
+
+### Acceso
+```
+URL: http://localhost:5000
+````
 - **[CODIGO_FUENTE/app.py](./CODIGO_FUENTE/app.py)** - Código fuente (2350+ líneas)
 
 ### 🔧 Para problemas:
