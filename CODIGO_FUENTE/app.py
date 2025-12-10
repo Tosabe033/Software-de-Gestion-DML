@@ -386,7 +386,7 @@ def load_seed_data(db=None):
 # ======================== HELPERS ========================
 
 def send_mail(to_email, subject, html_body):
-    """Envía mail con manejo de errores."""
+    """Envía mail con manejo de errores y timeout."""
     try:
         msg = MIMEMultipart('alternative')
         msg['From'] = app.config['MAIL_DEFAULT_SENDER']
@@ -394,16 +394,18 @@ def send_mail(to_email, subject, html_body):
         msg['Subject'] = subject
         msg.attach(MIMEText(html_body, 'html'))
         
-        with smtplib.SMTP(app.config['MAIL_SERVER'], app.config['MAIL_PORT']) as server:
+        # Timeout de 10 segundos para evitar bloqueos
+        with smtplib.SMTP(app.config['MAIL_SERVER'], app.config['MAIL_PORT'], timeout=10) as server:
             if app.config['MAIL_USE_TLS']:
                 server.starttls()
             if app.config['MAIL_USERNAME']:
                 server.login(app.config['MAIL_USERNAME'], app.config['MAIL_PASSWORD'])
             server.send_message(msg)
         
+        print(f"✅ Mail enviado exitosamente a {to_email}", file=sys.stderr, flush=True)
         return True
     except Exception as e:
-        print(f"Error sending mail: {e}")
+        print(f"⚠️ Error enviando mail a {to_email}: {e}", file=sys.stderr, flush=True)
         return False
 
 def log_action(user_id, action, table_name, record_id=None, old_value=None, new_value=None):
@@ -1756,14 +1758,17 @@ def dml_close(id):
             </body>
             </html>
             """
-            send_mail(raypac['mail_comercial'], 
-                     f"✅ Máquina Lista: Ficha #{ficha['numero_ficha']:07d}",
-                     html_body)
+            mail_sent = send_mail(raypac['mail_comercial'], 
+                                 f"✅ Máquina Lista: Ficha #{ficha['numero_ficha']:07d}",
+                                 html_body)
+            mail_status = "enviada" if mail_sent else "fallida (revisar logs)"
+        else:
+            mail_status = "sin email configurado"
         
         log_action(user['id'], "CLOSE", "dml_fichas", id, None, 
-                  f"Ficha finalizada - Notificación enviada a {raypac['comercial'] if raypac else 'N/A'}")
+                  f"Ficha finalizada - Notificación {mail_status} - Comercial: {raypac['comercial'] if raypac else 'N/A'}")
         
-        flash(f"✅ Ficha #{ficha['numero_ficha']} finalizada. Notificación enviada al comercial.", "success")
+        flash(f"✅ Ficha #{ficha['numero_ficha']} finalizada. Notificación {mail_status}.", "success")
         
     except Exception as e:
         flash(f"Error al cerrar ficha: {str(e)}", "error")
