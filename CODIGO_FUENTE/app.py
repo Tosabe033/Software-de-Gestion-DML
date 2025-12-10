@@ -1054,7 +1054,8 @@ def raypac_list():
     db = get_db()
     entries = db.execute("""
         SELECT r.*, 
-               (SELECT COUNT(*) FROM dml_fichas f WHERE f.raypac_id = r.id) AS fichas_count
+               (SELECT COUNT(*) FROM dml_fichas f WHERE f.raypac_id = r.id) AS fichas_count,
+               (SELECT f.id FROM dml_fichas f WHERE f.raypac_id = r.id ORDER BY f.created_at DESC LIMIT 1) AS ficha_id
         FROM raypac_entries r
         ORDER BY r.created_at DESC
     """).fetchall()

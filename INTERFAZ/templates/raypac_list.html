@@ -54,7 +54,11 @@
                     </td>
                     <td>
                         {% if entry.fichas_count and entry.fichas_count > 0 %}
-                            <span class="badge" style="background-color: #28a745; color: white; font-size: 12px;">Creada</span>
+                            {% if entry.ficha_id %}
+                                <a href="{{ url_for('dml_view', id=entry.ficha_id) }}" class="badge" style="background-color: #28a745; color: white; font-size: 12px; text-decoration: none;">Creada</a>
+                            {% else %}
+                                <span class="badge" style="background-color: #28a745; color: white; font-size: 12px;">Creada</span>
+                            {% endif %}
                         {% elif entry.is_frozen %}
                             <a href="{{ url_for('dml_new', raypac_id=entry.id) }}" class="btn btn-sm btn-success">Crear Ficha</a>
                         {% else %}

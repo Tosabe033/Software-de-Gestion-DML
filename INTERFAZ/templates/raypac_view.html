@@ -73,8 +73,8 @@
         </div>
     </div>
 
-    <!-- CREAR FICHA DML -->
-    {% if entry.is_frozen %}
+    <!-- CREAR FICHA DML (solo para DML_ST y ADMIN) -->
+    {% if entry.is_frozen and session.get('user_role') in ['ADMIN', 'DML_ST'] %}
     <div class="card shadow-sm">
         <div class="card-header bg-success text-white">
             <h5>Crear Ficha de Servicio Técnico en DML</h5>
