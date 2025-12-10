@@ -967,6 +967,17 @@ def apply_migrations():
             if not os.path.exists(db_path):
                 print("📁 Base de datos no encontrada. Inicializando...")
                 init_db()
+                
+                # Cargar datos iniciales automáticamente si la BD está vacía
+                try:
+                    db = get_db()
+                    user_count = db.execute("SELECT COUNT(*) as count FROM users").fetchone()['count']
+                    if user_count == 0:
+                        print("[SEED] 🌱 Cargando datos iniciales...")
+                        load_seed_data()
+                        print("[SEED] ✅ Datos iniciales cargados exitosamente")
+                except Exception as e:
+                    print(f"[SEED] ❌ Error cargando datos: {e}")
             else:
                 # Si existe, aplicar migraciones
                 migrate_db()
@@ -2691,17 +2702,6 @@ if __name__ == "__main__":
             print("[DB] Creando base de datos...")
             init_db()
             print("[DB] Base de datos creada exitosamente")
-            
-            # Cargar datos iniciales automáticamente si la BD está vacía
-            try:
-                db = get_db()
-                user_count = db.execute("SELECT COUNT(*) as count FROM users").fetchone()['count']
-                if user_count == 0:
-                    print("[SEED] Cargando datos iniciales...")
-                    load_seed_data()
-                    print("[SEED] Datos iniciales cargados exitosamente")
-            except Exception as e:
-                print(f"[SEED] Error cargando datos: {e}")
         else:
             # Aplicar migraciones a BD existente
             migrate_db()
