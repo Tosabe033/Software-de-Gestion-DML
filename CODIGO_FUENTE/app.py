@@ -211,7 +211,7 @@ def load_seed_data(db=None):
     ]
     
     for email, role, pwd, active in usuarios:
-        db.execute("INSERT INTO users (email, role, password, is_active) VALUES (?, ?, ?, ?)",
+        db.execute("INSERT INTO users (email, role, password_hash, is_active) VALUES (?, ?, ?, ?)",
                    (email, role, pwd, active))
     
     # 2. Crear repuestos en matriz
