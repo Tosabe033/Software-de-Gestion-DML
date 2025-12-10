@@ -202,6 +202,19 @@ def load_seed_data(db=None):
     if db is None:
         db = get_db()
     
+    # LIMPIAR datos existentes (importante para re-seeds)
+    db.execute("DELETE FROM estadisticas_repuestos")
+    db.execute("DELETE FROM envio_items")
+    db.execute("DELETE FROM envios")
+    db.execute("DELETE FROM ficha_partes")
+    db.execute("DELETE FROM tickets")
+    db.execute("DELETE FROM fichas_dml")
+    db.execute("DELETE FROM raypac_entries")
+    db.execute("DELETE FROM stock_ubicaciones")
+    db.execute("DELETE FROM matriz_repuestos")
+    db.execute("DELETE FROM users")
+    db.commit()
+    
     # 1. Crear usuarios
     usuarios = [
         ('admin@dml.local', 'ADMIN', generate_password_hash('admin'), 1),
