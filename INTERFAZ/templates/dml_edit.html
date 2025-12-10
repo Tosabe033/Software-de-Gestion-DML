@@ -188,10 +188,9 @@
         <div class="form-group" style="border: 2px solid #ffc107; padding: 15px; background-color: #fff3cd; border-radius: 5px;">
             <label style="color: #856404; font-weight: bold;">⚠️ Número de Remito de Salida (DML→RAYPAC):</label>
             <input type="text" name="numero_remito_salida" value="{{ ficha.numero_remito_salida or '' }}" 
-                   placeholder="ej. REM-2025-001" class="form-control" 
-                   {% if not ficha.numero_remito_salida %}required{% endif %}>
+                   placeholder="ej. REM-2025-001" class="form-control">
             <small style="color: #856404; display: block; margin-top: 5px;">
-                📋 <strong>Requerido para cerrar la ficha.</strong> Indica el remito de transporte cuando el equipo vuelve a RAYPAC.
+                📋 <strong>Opcional durante edición. Requerido solo para CERRAR la ficha.</strong> Indica el remito de transporte cuando el equipo vuelve a RAYPAC.
             </small>
         </div>
 
