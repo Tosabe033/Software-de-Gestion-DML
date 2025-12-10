@@ -176,6 +176,7 @@ def migrate_db():
         db.commit()
 
 def init_db():
+    import sys
     db = get_db()
     schema_path = os.path.join(os.path.dirname(__file__), "schema.sql")
     with open(schema_path, "r", encoding="utf-8") as f:
@@ -183,16 +184,16 @@ def init_db():
     db.commit()
     migrate_db()  # Aplicar migraciones
     
-    # Cargar datos iniciales si la BD está vacía
+    # Cargar datos iniciales (asumimos BD nueva)
     try:
-        user_count = db.execute("SELECT COUNT(*) as count FROM users").fetchone()['count']
-        if user_count == 0:
-            import sys
-            print("[SEED] 🌱 Cargando datos iniciales...", file=sys.stderr, flush=True)
-            load_seed_data(db)  # Pasar la conexión existente
-            print("[SEED] ✅ Datos iniciales cargados exitosamente", file=sys.stderr, flush=True)
+        print("[SEED] 🌱 Cargando datos iniciales...", file=sys.stderr, flush=True)
+        # Obtener nueva conexión después de las migraciones
+        db = get_db()
+        load_seed_data(db)  # Pasar la conexión existente
+        db.commit()  # Asegurar commit
+        print("[SEED] ✅ Datos iniciales cargados exitosamente", file=sys.stderr, flush=True)
     except Exception as e:
-        import sys, traceback
+        import traceback
         print(f"[SEED] ❌ Error cargando datos: {e}", file=sys.stderr, flush=True)
         traceback.print_exc(file=sys.stderr)
 
