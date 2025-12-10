@@ -1434,6 +1434,11 @@ def dml_edit(id):
     partes = db.execute("SELECT * FROM dml_partes WHERE ficha_id = ?", (id,)).fetchall()
     repuestos = db.execute("SELECT * FROM dml_repuestos WHERE ficha_id = ?", (id,)).fetchall()
     
+    # Convertir Row a dict para serialización JSON
+    partes = [dict(p) for p in partes]
+    repuestos = [dict(r) for r in repuestos]
+    ficha = dict(ficha)
+    
     return render_template("dml_edit.html", ficha=ficha, partes=partes, repuestos=repuestos)
 
 # ======================== REPUESTOS ========================
