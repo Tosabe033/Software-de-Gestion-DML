@@ -182,6 +182,18 @@ def init_db():
         db.executescript(f.read())
     db.commit()
     migrate_db()  # Aplicar migraciones
+    
+    # Cargar datos iniciales si la BD está vacía
+    try:
+        user_count = db.execute("SELECT COUNT(*) as count FROM users").fetchone()['count']
+        if user_count == 0:
+            print("[SEED] 🌱 Cargando datos iniciales...")
+            load_seed_data()
+            print("[SEED] ✅ Datos iniciales cargados exitosamente")
+    except Exception as e:
+        print(f"[SEED] ❌ Error cargando datos: {e}")
+        import traceback
+        traceback.print_exc()
 
 def load_seed_data():
     """Carga datos iniciales en la base de datos."""
@@ -962,27 +974,18 @@ def apply_migrations():
     """Aplica migraciones de BD al iniciar la app"""
     if not hasattr(app, '_migrations_applied'):
         try:
-            # Si la BD no existe, crearla
+            # Si la BD no existe, crearla (init_db incluye seed automático)
             db_path = app.config["DATABASE"]
             if not os.path.exists(db_path):
                 print("📁 Base de datos no encontrada. Inicializando...")
                 init_db()
-                
-                # Cargar datos iniciales automáticamente si la BD está vacía
-                try:
-                    db = get_db()
-                    user_count = db.execute("SELECT COUNT(*) as count FROM users").fetchone()['count']
-                    if user_count == 0:
-                        print("[SEED] 🌱 Cargando datos iniciales...")
-                        load_seed_data()
-                        print("[SEED] ✅ Datos iniciales cargados exitosamente")
-                except Exception as e:
-                    print(f"[SEED] ❌ Error cargando datos: {e}")
             else:
                 # Si existe, aplicar migraciones
                 migrate_db()
         except Exception as e:
             print(f"Error en migraciones: {e}")
+            import traceback
+            traceback.print_exc()
         app._migrations_applied = True
 
 # ======================== RAYPAC ========================
