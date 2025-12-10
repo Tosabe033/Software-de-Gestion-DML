@@ -1405,6 +1405,27 @@ def dml_edit(id):
             numero_remito = request.form.get("numero_remito_salida")
             tecnico_resp = request.form.get("tecnico_resp") or ""
             
+            # Validación de flujo lógico de estados según documento David
+            # Orden lógico: A LA ESPERA DE REVISIÓN → EN REPARACIÓN → [A LA ESPERA DE REPUESTOS] → MÁQUINA LISTA PARA RETIRAR → MÁQUINA ENTREGADA
+            estados_orden = {
+                'A LA ESPERA DE REVISIÓN': 0,
+                'EN REPARACION': 1,
+                'A LA ESPERA DE REPUESTOS': 1,  # Mismo nivel que EN REPARACION (puede ir y volver)
+                'REPARACIÓN COMPLETADA': 2,
+                'MÁQUINA LISTA PARA RETIRAR': 3,
+                'MÁQUINA ENTREGADA': 4,
+                'FINALIZADO': 5
+            }
+            
+            estado_actual_nivel = estados_orden.get(ficha['estado_reparacion'], 0)
+            estado_nuevo_nivel = estados_orden.get(estado, 0)
+            
+            # Prevenir retrocesos ilógicos (salvo entre EN REPARACION y A LA ESPERA DE REPUESTOS)
+            if estado_actual_nivel >= 3 and estado_nuevo_nivel < estado_actual_nivel:
+                # No permitir retrocesos desde MÁQUINA LISTA o posterior
+                flash(f"⚠️ No se puede retroceder de '{ficha['estado_reparacion']}' a '{estado}'. Para cambios contacte al administrador.", "error")
+                return redirect(url_for("dml_edit", id=id))
+            
             # Actualizar SOLO los campos que existen en dml_fichas
             db.execute("""
                 UPDATE dml_fichas 
@@ -1485,9 +1506,9 @@ def agregar_repuesto(id):
         flash(f"Repuesto '{codigo}' no encontrado en la matriz de repuestos.", "error")
         return redirect(url_for("dml_edit", id=id))
     
-    # Verificar stock AUTOMÁTICAMENTE
+    # Verificar stock AUTOMÁTICAMENTE en ubicación DML
     stock = db.execute(
-        "SELECT cantidad FROM stock_dml WHERE codigo_repuesto = ?",
+        "SELECT cantidad FROM stock_ubicaciones WHERE codigo_repuesto = ? AND ubicacion = 'DML'",
         (codigo,)
     ).fetchone()
     
@@ -1496,11 +1517,8 @@ def agregar_repuesto(id):
         en_stock = 1
         en_falta = 0
         estado_repuesto = "EN STOCK"
-        # Descontar del stock
-        db.execute(
-            "UPDATE stock_dml SET cantidad = cantidad - ? WHERE codigo_repuesto = ?",
-            (cantidad_utilizada, codigo)
-        )
+        # Descontar del stock en DML usando ajustar_stock_ubicacion
+        ajustar_stock_ubicacion(codigo, "DML", -cantidad_utilizada)
     else:
         en_stock = 0
         en_falta = 1
@@ -1570,16 +1588,20 @@ def marcar_repuesto_llegada(id, repuesto_id):
     
     # Cambiar estado
     db.execute(
-        "UPDATE dml_repuestos SET en_falta = 0, en_stock = 1 WHERE id = ?",
+        "UPDATE dml_repuestos SET en_falta = 0, en_stock = 1, estado_repuesto = 'EN STOCK' WHERE id = ?",
         (repuesto_id,)
     )
     
-    # Actualizar stock
-    db.execute(
-        "UPDATE stock_dml SET cantidad = cantidad - ? WHERE codigo_repuesto = ?",
-        (repuesto['cantidad'], repuesto['codigo_repuesto'])
-    )
+    # Descontar del stock en ubicación DML
+    ajustar_stock_ubicacion(repuesto['codigo_repuesto'], "DML", -repuesto['cantidad_utilizada'])
+    
+    # Actualizar estadísticas
+    actualizar_estadistica_repuesto(repuesto['codigo_repuesto'], repuesto['cantidad_utilizada'])
+    
     db.commit()
+    
+    # Verificar alerta de stock después de descontar
+    verificar_alerta_stock(repuesto['codigo_repuesto'])
     
     log_action(user['id'], "PART_ARRIVED", "dml_repuestos", repuesto_id, None,
               f"{repuesto['codigo_repuesto']}")
@@ -1598,13 +1620,16 @@ def eliminar_repuesto(ficha_id, repuesto_id):
         flash("Repuesto no encontrado.", "error")
         return redirect(url_for("dml_view", id=ficha_id))
     
-    # Si el repuesto estaba en stock, devolverlo
+    # Si el repuesto estaba en stock, devolverlo a ubicación DML
     if repuesto['en_stock']:
-        db.execute(
-            "UPDATE stock_dml SET cantidad = cantidad + ? WHERE codigo_repuesto = ?",
-            (repuesto['cantidad'], repuesto['codigo_repuesto'])
-        )
-        db.commit()
+        ajustar_stock_ubicacion(repuesto['codigo_repuesto'], "DML", repuesto['cantidad_utilizada'])
+        
+        # Restar de estadísticas (reversar el uso)
+        db.execute("""
+            UPDATE estadisticas_repuestos 
+            SET total_usos = total_usos - ?, ultima_actualizacion = CURRENT_TIMESTAMP
+            WHERE codigo_repuesto = ?
+        """, (repuesto['cantidad_utilizada'], repuesto['codigo_repuesto']))
     
     # Eliminar repuesto
     db.execute("DELETE FROM dml_repuestos WHERE id = ?", (repuesto_id,))
