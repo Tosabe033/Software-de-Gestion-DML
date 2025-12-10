@@ -1717,6 +1717,15 @@ def dml_close(id):
             SET is_closed = 1, fecha_egreso = ?, estado_reparacion = 'FINALIZADO'
             WHERE id = ?
         """, (fecha_egreso, id))
+        
+        # Cerrar el ticket asociado (ya cumplió su función de seguimiento)
+        if ficha['numero_ticket']:
+            db.execute("""
+                UPDATE tickets 
+                SET estado = 'CERRADO', fecha_cierre = ?
+                WHERE numero_ticket = ?
+            """, (fecha_egreso, ficha['numero_ticket']))
+        
         db.commit()
         
         # Obtener info para email
@@ -1787,14 +1796,19 @@ def dml_close(id):
 @login_required
 @role_required("ADMIN", "DML_REPUESTOS", "DML_ST")
 def tickets_list():
-    """Listado de todos los tickets con búsqueda y filtro."""
+    """Listado de tickets activos (no cerrados) con búsqueda y filtro."""
     db = get_db()
     
     buscar = request.args.get("buscar", "")
     estado = request.args.get("estado", "")
+    mostrar_cerrados = request.args.get("cerrados", "0") == "1"  # Por defecto no mostrar cerrados
     
     query = "SELECT t.*, f.numero_ficha, f.estado_reparacion FROM tickets t JOIN dml_fichas f ON t.ficha_id = f.id WHERE 1=1"
     params = []
+    
+    # Por defecto, solo mostrar tickets activos (no cerrados)
+    if not mostrar_cerrados:
+        query += " AND (t.estado IS NULL OR t.estado != 'CERRADO')"
     
     if buscar:
         query += " AND (t.numero_ticket LIKE ? OR t.numero_serie LIKE ?)"
@@ -1808,7 +1822,7 @@ def tickets_list():
     
     tickets = db.execute(query, params).fetchall()
     
-    return render_template("tickets_list.html", tickets=tickets, buscar=buscar, estado=estado)
+    return render_template("tickets_list.html", tickets=tickets, buscar=buscar, estado=estado, mostrar_cerrados=mostrar_cerrados)
 
 @app.route("/ticket/<numero_ticket>")
 def ticket_view(numero_ticket):
