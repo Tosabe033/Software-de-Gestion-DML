@@ -1704,6 +1704,11 @@ def dml_close(id):
         flash("Esta ficha ya está cerrada.", "info")
         return redirect(url_for("dml_view", id=id))
     
+    # Validar que exista remito de salida
+    if not ficha['numero_remito_salida']:
+        flash("⚠️ No se puede cerrar la ficha sin número de remito de salida. Por favor, edita la ficha y agrega el remito.", "error")
+        return redirect(url_for("dml_view", id=id))
+    
     try:
         # Cerrar la ficha
         fecha_egreso = datetime.now().strftime("%Y-%m-%d")

@@ -194,6 +194,17 @@
                     <span style="margin-left: 40px;"><strong>Cargador N°:</strong> {{ raypac.numero_cargador if raypac else 'NO APLICA' }}</span>
                 </div>
             </div>
+            
+            <div class="info-row">
+                <div class="info-label">Remito de Salida (DML→RAYPAC):</div>
+                <div class="info-value">
+                    {% if ficha.numero_remito_salida %}
+                        <strong style="color: #28a745;">{{ ficha.numero_remito_salida }}</strong>
+                    {% else %}
+                        <span style="color: #dc3545;">⚠️ PENDIENTE (requerido para cerrar)</span>
+                    {% endif %}
+                </div>
+            </div>
         </div>
 
         <!-- COLUMNA DERECHA: ESTADO DEL EQUIPO -->
