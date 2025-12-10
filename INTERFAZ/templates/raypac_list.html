@@ -30,7 +30,7 @@
                     <th>Comercial</th>
                     <th>Remito</th>
                     <th>Estado</th>
-                    {% if session.get('user_role') in ['ADMIN', 'DML_ST'] %}
+                    {% if user_role in ['ADMIN', 'DML_ST'] %}
                     <th>Ficha ST</th>
                     {% endif %}
                     <th>Acciones</th>
@@ -54,7 +54,7 @@
                         <span class="badge" style="background-color: #ffc107; color: black; font-size: 12px;">Editable</span>
                         {% endif %}
                     </td>
-                    {% if session.get('user_role') in ['ADMIN', 'DML_ST'] %}
+                    {% if user_role in ['ADMIN', 'DML_ST'] %}
                     <td>
                         {% if entry.fichas_count and entry.fichas_count > 0 %}
                             {% if entry.ficha_id %}

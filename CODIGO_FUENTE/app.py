@@ -1053,6 +1053,7 @@ def apply_migrations():
 @login_required
 @role_required("ADMIN", "RAYPAC")
 def raypac_list():
+    user = get_current_user()
     db = get_db()
     entries = db.execute("""
         SELECT r.*, 
@@ -1062,7 +1063,7 @@ def raypac_list():
         ORDER BY r.created_at DESC
     """).fetchall()
     
-    return render_template("raypac_list.html", entries=entries)
+    return render_template("raypac_list.html", entries=entries, user_role=user['role'])
 
 @app.route("/raypac/new", methods=["GET", "POST"])
 @login_required
@@ -1124,6 +1125,7 @@ def raypac_new():
 @login_required
 @role_required("ADMIN", "RAYPAC")
 def raypac_view(id):
+    user = get_current_user()
     db = get_db()
     entry = db.execute("SELECT * FROM raypac_entries WHERE id = ?", (id,)).fetchone()
     
@@ -1131,7 +1133,7 @@ def raypac_view(id):
         flash("Registro no encontrado.", "error")
         return redirect(url_for("raypac_list"))
     
-    return render_template("raypac_view.html", entry=entry)
+    return render_template("raypac_view.html", entry=entry, user_role=user['role'])
 
 @app.route("/raypac/<int:id>/edit", methods=["GET", "POST"])
 @login_required
@@ -1263,6 +1265,7 @@ def dml_list():
         SELECT f.*, r.cliente, r.numero_serie 
         FROM dml_fichas f
         LEFT JOIN raypac_entries r ON f.raypac_id = r.id
+        WHERE f.is_closed = 0
         ORDER BY f.created_at DESC
     """).fetchall()
     
