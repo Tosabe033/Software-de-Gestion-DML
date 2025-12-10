@@ -183,6 +183,137 @@ def init_db():
     db.commit()
     migrate_db()  # Aplicar migraciones
 
+def load_seed_data():
+    """Carga datos iniciales en la base de datos."""
+    db = get_db()
+    
+    # 1. Crear usuarios
+    usuarios = [
+        ('admin@dml.local', 'ADMIN', generate_password_hash('admin'), 1),
+        ('raypac@dml.local', 'RAYPAC', generate_password_hash('raypac'), 1),
+        ('tecnico@dml.local', 'DML_ST', generate_password_hash('tecnico'), 1),
+        ('repuestos@dml.local', 'DML_REPUESTOS', generate_password_hash('repuestos'), 1)
+    ]
+    
+    for email, role, pwd, active in usuarios:
+        db.execute("INSERT INTO users (email, role, password, is_active) VALUES (?, ?, ?, ?)",
+                   (email, role, pwd, active))
+    
+    # 2. Crear repuestos en matriz
+    repuestos = [
+        ('A000001', 'Correa de transmisión principal'),
+        ('A000002', 'Rodamiento SKF 6203'),
+        ('A000003', 'Sello mecánico estándar'),
+        ('A000004', 'Motor eléctrico 1HP'),
+        ('A000005', 'Filtro de aire HEPA'),
+        ('A000006', 'Válvula solenoide 24V'),
+        ('A000007', 'Sensor de temperatura PT100'),
+        ('A000008', 'Relé de estado sólido'),
+        ('A000009', 'Cable multiconductor 10m'),
+        ('A000010', 'Cuchilla de corte industrial')
+    ]
+    
+    for codigo, desc in repuestos:
+        db.execute("INSERT INTO matriz_repuestos (codigo_repuesto, item) VALUES (?, ?)",
+                   (codigo, desc))
+    
+    # 3. Crear stock RAYPAC
+    stock_raypac = [
+        ('A000001', 'RAYPAC', 10), ('A000002', 'RAYPAC', 15), ('A000003', 'RAYPAC', 5),
+        ('A000004', 'RAYPAC', 2), ('A000005', 'RAYPAC', 8), ('A000006', 'RAYPAC', 1),
+        ('A000007', 'RAYPAC', 12), ('A000008', 'RAYPAC', 3), ('A000009', 'RAYPAC', 0),
+        ('A000010', 'RAYPAC', 6)
+    ]
+    
+    for codigo, ubicacion, cantidad in stock_raypac:
+        db.execute("INSERT INTO stock_ubicaciones (codigo_repuesto, ubicacion, cantidad) VALUES (?, ?, ?)",
+                   (codigo, ubicacion, cantidad))
+    
+    # 4. Crear stock DML
+    stock_dml = [
+        ('A000001', 'DML', 5), ('A000002', 'DML', 3), ('A000003', 'DML', 2),
+        ('A000004', 'DML', 1), ('A000005', 'DML', 4), ('A000006', 'DML', 0),
+        ('A000007', 'DML', 2), ('A000008', 'DML', 2), ('A000009', 'DML', 1),
+        ('A000010', 'DML', 3)
+    ]
+    
+    for codigo, ubicacion, cantidad in stock_dml:
+        db.execute("INSERT INTO stock_ubicaciones (codigo_repuesto, ubicacion, cantidad) VALUES (?, ?, ?)",
+                   (codigo, ubicacion, cantidad))
+    
+    # 5. Crear ingreso RAYPAC freezado
+    fecha_hoy = datetime.now().strftime('%Y-%m-%d')
+    db.execute("""
+        INSERT INTO raypac_entries (numero_correlativo, fecha_recepcion, tipo_solicitud, cliente, 
+                                     numero_serie, modelo_maquina, tipo_maquina, diagnostico_ingreso, 
+                                     comercial, mail_comercial, numero_remito, is_frozen)
+        VALUES (1, ?, 'REPARACION', 'Empresa Demo SA', 'EQ-2024-001', 
+                'Validador Modelo X', 'A BATERIA', 'Equipo para revisión general',
+                'Carlos Vendedor', 'ventas@empresa.com', 'RM-2024-001', 1)
+    """, (fecha_hoy,))
+    
+    # 6. Crear ingreso RAYPAC editable
+    db.execute("""
+        INSERT INTO raypac_entries (numero_correlativo, fecha_recepcion, tipo_solicitud, cliente, 
+                                     numero_serie, modelo_maquina, tipo_maquina, diagnostico_ingreso, 
+                                     comercial, mail_comercial, is_frozen)
+        VALUES (2, ?, 'REPARACION', 'Cliente Test SRL', 'EQ-2024-002', 
+                'Selladora Industrial', '220V', 'Revisión preventiva',
+                'Ana Comercial', 'comercial@test.com', 0)
+    """, (fecha_hoy,))
+    
+    # 7. Crear ficha DML con ticket
+    db.execute("""
+        INSERT INTO dml_fichas (numero_ficha, raypac_id, fecha_ingreso, tecnico, 
+                                diagnostico_inicial, estado_reparacion, tecnico_resp)
+        VALUES (501, 1, ?, 'Técnico Demo', 'Equipo requiere revisión de motor y sellado',
+                'EN REPARACION', 'Técnico Demo')
+    """, (fecha_hoy,))
+    
+    ficha_id = db.execute("SELECT last_insert_rowid() as id").fetchone()['id']
+    
+    # Crear ticket para la ficha
+    numero_ticket = f"TK-2025-EQ-2024-001-{ficha_id:05d}"
+    db.execute("""
+        INSERT INTO tickets (numero_ticket, ficha_id, numero_serie, estado)
+        VALUES (?, ?, 'EQ-2024-001', 'ACTIVO')
+    """, (numero_ticket, ficha_id))
+    
+    # Crear partes de la ficha
+    partes = [
+        'ESTADO DEL EQUIPO', 'CARCAZA', 'CUBRE FEEDWHEEL', 'MANGO', 'BOTONES',
+        'MOTOR DE ARRASTRE', 'MOTOR DE SELLADO', 'CUCHILLA', 'SERVO',
+        'RUEDA DE ARRASTRE', 'RESORTE DE MANIJA', 'OTROS'
+    ]
+    
+    for parte in partes:
+        db.execute("INSERT INTO dml_partes (ficha_id, nombre_parte, estado) VALUES (?, ?, 'POR INSPECCIONAR')",
+                   (ficha_id, parte))
+    
+    # 8. Crear envío RAYPAC → DML (recibido)
+    db.execute("""
+        INSERT INTO envios_repuestos (numero_envio, fecha_envio, origen, destino, 
+                                       estado, numero_remito, fecha_recepcion)
+        VALUES ('RP-2024-00100', ?, 'RAYPAC', 'DML', 'RECIBIDO', 'ENV-001', ?)
+    """, (fecha_hoy, fecha_hoy))
+    
+    envio_id = db.execute("SELECT last_insert_rowid() as id").fetchone()['id']
+    
+    # Detalle del envío
+    db.execute("""
+        INSERT INTO envios_detalles (envio_id, codigo_repuesto, cantidad_enviada, cantidad_recibida)
+        VALUES (?, 'A000001', 3, 3)
+    """, (envio_id,))
+    
+    # 9. Crear estadística de uso
+    db.execute("""
+        INSERT INTO estadisticas_repuestos (codigo_repuesto, item, cantidad_utilizada, 
+                                             fecha_ultimo_uso, total_usos)
+        VALUES ('A000001', 'Correa de transmisión principal', 5, ?, 3)
+    """, (fecha_hoy,))
+    
+    db.commit()
+
 # ======================== HELPERS ========================
 
 def send_mail(to_email, subject, html_body):
@@ -2560,6 +2691,17 @@ if __name__ == "__main__":
             print("[DB] Creando base de datos...")
             init_db()
             print("[DB] Base de datos creada exitosamente")
+            
+            # Cargar datos iniciales automáticamente si la BD está vacía
+            try:
+                db = get_db()
+                user_count = db.execute("SELECT COUNT(*) as count FROM users").fetchone()['count']
+                if user_count == 0:
+                    print("[SEED] Cargando datos iniciales...")
+                    load_seed_data()
+                    print("[SEED] Datos iniciales cargados exitosamente")
+            except Exception as e:
+                print(f"[SEED] Error cargando datos: {e}")
         else:
             # Aplicar migraciones a BD existente
             migrate_db()
