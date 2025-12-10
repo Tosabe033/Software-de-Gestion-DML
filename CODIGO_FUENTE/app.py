@@ -187,17 +187,19 @@ def init_db():
     try:
         user_count = db.execute("SELECT COUNT(*) as count FROM users").fetchone()['count']
         if user_count == 0:
-            print("[SEED] 🌱 Cargando datos iniciales...")
-            load_seed_data()
-            print("[SEED] ✅ Datos iniciales cargados exitosamente")
+            import sys
+            print("[SEED] 🌱 Cargando datos iniciales...", file=sys.stderr, flush=True)
+            load_seed_data(db)  # Pasar la conexión existente
+            print("[SEED] ✅ Datos iniciales cargados exitosamente", file=sys.stderr, flush=True)
     except Exception as e:
-        print(f"[SEED] ❌ Error cargando datos: {e}")
-        import traceback
-        traceback.print_exc()
+        import sys, traceback
+        print(f"[SEED] ❌ Error cargando datos: {e}", file=sys.stderr, flush=True)
+        traceback.print_exc(file=sys.stderr)
 
-def load_seed_data():
+def load_seed_data(db=None):
     """Carga datos iniciales en la base de datos."""
-    db = get_db()
+    if db is None:
+        db = get_db()
     
     # 1. Crear usuarios
     usuarios = [
