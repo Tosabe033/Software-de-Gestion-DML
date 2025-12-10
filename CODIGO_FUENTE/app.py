@@ -2513,6 +2513,29 @@ def usuarios_list():
     usuarios = db.execute("SELECT * FROM users ORDER BY email").fetchall()
     return render_template("usuarios_list.html", usuarios=usuarios, user=user)
 
+@app.route("/admin/reset-database-with-seeds", methods=["POST"])
+def reset_database_temp():
+    """Endpoint temporal para resetear BD con seeds (SOLO PRODUCCIÓN)"""
+    import sys
+    try:
+        # Borrar BD actual
+        db_path = app.config["DATABASE"]
+        if os.path.exists(db_path):
+            os.remove(db_path)
+            print("[RESET] Base de datos eliminada", file=sys.stderr, flush=True)
+        
+        # Recrear con seeds
+        with app.app_context():
+            init_db()
+            print("[RESET] Base de datos recreada con seeds", file=sys.stderr, flush=True)
+        
+        return "Base de datos reseteada exitosamente. <a href='/login'>Ir al login</a>", 200
+    except Exception as e:
+        import traceback
+        print(f"[RESET] Error: {e}", file=sys.stderr, flush=True)
+        traceback.print_exc(file=sys.stderr)
+        return f"Error: {e}", 500
+
 @app.route("/admin/usuarios/nueva", methods=["GET", "POST"])
 @login_required
 @role_required("ADMIN")
