@@ -198,148 +198,188 @@ def init_db():
         traceback.print_exc(file=sys.stderr)
 
 def load_seed_data(db=None):
-    """Carga datos iniciales en la base de datos."""
+    """Carga datos iniciales en la base de datos - BASADO EN seed_data_minimal.py"""
     if db is None:
         db = get_db()
     
-    # LIMPIAR datos existentes (importante para re-seeds)
-    db.execute("DELETE FROM estadisticas_repuestos")
-    db.execute("DELETE FROM envios_repuestos_detalles")
-    db.execute("DELETE FROM envios_repuestos")
-    db.execute("DELETE FROM dml_repuestos")
-    db.execute("DELETE FROM dml_partes")
-    db.execute("DELETE FROM tickets")
-    db.execute("DELETE FROM dml_fichas")
-    db.execute("DELETE FROM raypac_entries")
-    db.execute("DELETE FROM stock_ubicaciones")
-    db.execute("DELETE FROM matriz_repuestos")
-    db.execute("DELETE FROM users")
+    # LIMPIAR en orden correcto (hijas primero, padres después)
+    tables = [
+        "ticket_historial", "audit_log", "mail_log", "stock_alertas",
+        "estadisticas_repuestos", "tickets", "dml_repuestos", "dml_partes",
+        "dml_fichas", "envios_repuestos_detalles", "envios_repuestos",
+        "stock_ubicaciones", "stock_dml", "raypac_entries", "matriz_repuestos", "users"
+    ]
+    for table in tables:
+        try:
+            db.execute(f"DELETE FROM {table}")
+        except:
+            pass
     db.commit()
     
-    # 1. Crear usuarios
+    # 1. USUARIOS
     usuarios = [
-        ('admin@dml.local', 'ADMIN', generate_password_hash('admin'), 1),
-        ('raypac@dml.local', 'RAYPAC', generate_password_hash('raypac'), 1),
-        ('tecnico@dml.local', 'DML_ST', generate_password_hash('tecnico'), 1),
-        ('repuestos@dml.local', 'DML_REPUESTOS', generate_password_hash('repuestos'), 1)
+        ('admin@dml.local', 'admin', 'Administrador', 'ADMIN'),
+        ('raypac@dml.local', 'raypac', 'Casa Matriz RAYPAC', 'RAYPAC'),
+        ('tecnico@dml.local', 'tecnico', 'Juan Pérez', 'DML_ST'),
+        ('repuestos@dml.local', 'repuestos', 'Carlos López', 'DML_REPUESTOS'),
     ]
     
-    for email, role, pwd, active in usuarios:
-        db.execute("INSERT INTO users (email, role, password_hash, is_active) VALUES (?, ?, ?, ?)",
-                   (email, role, pwd, active))
+    for email, pwd, nombre, role in usuarios:
+        db.execute("""
+            INSERT INTO users (email, password_hash, nombre, role, is_active)
+            VALUES (?, ?, ?, ?, 1)
+        """, (email, generate_password_hash(pwd), nombre, role))
+    db.commit()
     
-    # 2. Crear repuestos en matriz
+    # 2. REPUESTOS EN MATRIZ
     repuestos = [
-        ('A000001', 'Correa de transmisión principal'),
-        ('A000002', 'Rodamiento SKF 6203'),
-        ('A000003', 'Sello mecánico estándar'),
-        ('A000004', 'Motor eléctrico 1HP'),
-        ('A000005', 'Filtro de aire HEPA'),
-        ('A000006', 'Válvula solenoide 24V'),
-        ('A000007', 'Sensor de temperatura PT100'),
-        ('A000008', 'Relé de estado sólido'),
-        ('A000009', 'Cable multiconductor 10m'),
-        ('A000010', 'Cuchilla de corte industrial')
+        ("A000001", "MOTOR DE ARRASTRE"),
+        ("A000002", "MOTOR DE SELLADO"),
+        ("A000003", "CUCHILLA SUPERIOR"),
+        ("A000004", "RUEDA DE ARRASTRE"),
+        ("A000005", "CARCAZA FRONTAL"),
+        ("A000006", "SERVO MOTOR"),
+        ("A000007", "RESORTE DE MANIJA"),
+        ("A000008", "BATERIA 12V"),
+        ("A000009", "CARGADOR 220V"),
+        ("A000010", "BOTONERA COMPLETA"),
     ]
     
-    for codigo, desc in repuestos:
-        db.execute("INSERT INTO matriz_repuestos (codigo_repuesto, item) VALUES (?, ?)",
-                   (codigo, desc))
+    for idx, (codigo, item) in enumerate(repuestos, start=1):
+        db.execute("""
+            INSERT INTO matriz_repuestos (numero, codigo_repuesto, item, cantidad_inicial, cantidad_actual, ubicacion)
+            VALUES (?, ?, ?, 0, 0, 'DML')
+        """, (idx, codigo, item))
+    db.commit()
     
-    # 3. Crear stock RAYPAC
+    # 3. STOCK RAYPAC
     stock_raypac = [
-        ('A000001', 'RAYPAC', 10), ('A000002', 'RAYPAC', 15), ('A000003', 'RAYPAC', 5),
-        ('A000004', 'RAYPAC', 2), ('A000005', 'RAYPAC', 8), ('A000006', 'RAYPAC', 1),
-        ('A000007', 'RAYPAC', 12), ('A000008', 'RAYPAC', 3), ('A000009', 'RAYPAC', 0),
-        ('A000010', 'RAYPAC', 6)
+        ("A000001", 15), ("A000002", 8), ("A000003", 3), ("A000004", 2), ("A000005", 10),
+        ("A000006", 1), ("A000007", 20), ("A000008", 5), ("A000009", 0), ("A000010", 12),
     ]
     
-    for codigo, ubicacion, cantidad in stock_raypac:
-        db.execute("INSERT INTO stock_ubicaciones (codigo_repuesto, ubicacion, cantidad) VALUES (?, ?, ?)",
-                   (codigo, ubicacion, cantidad))
+    for codigo, cant in stock_raypac:
+        db.execute("""
+            INSERT INTO stock_ubicaciones (codigo_repuesto, ubicacion, cantidad)
+            VALUES (?, 'RAYPAC', ?)
+        """, (codigo, cant))
+    db.commit()
     
-    # 4. Crear stock DML
+    # 4. STOCK DML
     stock_dml = [
-        ('A000001', 'DML', 5), ('A000002', 'DML', 3), ('A000003', 'DML', 2),
-        ('A000004', 'DML', 1), ('A000005', 'DML', 4), ('A000006', 'DML', 0),
-        ('A000007', 'DML', 2), ('A000008', 'DML', 2), ('A000009', 'DML', 1),
-        ('A000010', 'DML', 3)
+        ("A000001", 5), ("A000002", 3), ("A000003", 2), ("A000004", 1), ("A000005", 4),
+        ("A000006", 0), ("A000007", 8), ("A000008", 2), ("A000009", 3), ("A000010", 6),
     ]
     
-    for codigo, ubicacion, cantidad in stock_dml:
-        db.execute("INSERT INTO stock_ubicaciones (codigo_repuesto, ubicacion, cantidad) VALUES (?, ?, ?)",
-                   (codigo, ubicacion, cantidad))
+    for codigo, cant in stock_dml:
+        db.execute("""
+            INSERT INTO stock_ubicaciones (codigo_repuesto, ubicacion, cantidad)
+            VALUES (?, 'DML', ?)
+        """, (codigo, cant))
+        # Legacy stock_dml para compatibilidad
+        db.execute("""
+            INSERT INTO stock_dml (codigo_repuesto, item, cantidad, cantidad_minima, estado_alerta)
+            SELECT ?, item, ?, 2, 'OK'
+            FROM matriz_repuestos WHERE codigo_repuesto = ?
+        """, (codigo, cant, codigo))
+    db.commit()
     
-    # 5. Crear ingreso RAYPAC freezado
-    fecha_hoy = datetime.now().strftime('%Y-%m-%d')
+    # 5. INGRESO RAYPAC #1 (FREEZADO CON REMITO)
+    fecha_hoy = datetime.now().strftime("%Y-%m-%d")
+    fecha_ayer = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
+    
     db.execute("""
-        INSERT INTO raypac_entries (numero_correlativo, fecha_recepcion, tipo_solicitud, cliente, 
-                                     numero_serie, modelo_maquina, tipo_maquina, diagnostico_ingreso, 
-                                     comercial, mail_comercial, numero_remito, is_frozen)
-        VALUES (1, ?, 'REPARACION', 'Empresa Demo SA', 'EQ-2024-001', 
-                'Validador Modelo X', 'A BATERIA', 'Equipo para revisión general',
-                'Carlos Vendedor', 'ventas@empresa.com', 'RM-2024-001', 1)
-    """, (fecha_hoy,))
+        INSERT INTO raypac_entries 
+        (numero_correlativo, fecha_recepcion, tipo_solicitud, cliente, numero_serie,
+         modelo_maquina, tipo_maquina, numero_bateria, numero_cargador,
+         diagnostico_ingreso, comercial, mail_comercial, numero_remito, is_frozen)
+        VALUES (1, ?, 'REPARACION', 'ACME SA', 'EQ-2024-001',
+                'MB380', 'A BATERIA', 'BAT-001', 'CARG-001',
+                'Equipo no enciende, posible falla en motor de arrastre',
+                'María González', 'maria.gonzalez@raypac.com', 'RP-2024-00001', 1)
+    """, (fecha_ayer,))
+    raypac_id_1 = db.execute("SELECT last_insert_rowid() as id").fetchone()['id']
+    db.commit()
     
-    # 6. Crear ingreso RAYPAC editable
+    # 6. FICHA DML #1 CON TICKET
+    numero_ficha_1 = generate_ficha_number()
+    
     db.execute("""
-        INSERT INTO raypac_entries (numero_correlativo, fecha_recepcion, tipo_solicitud, cliente, 
-                                     numero_serie, modelo_maquina, tipo_maquina, diagnostico_ingreso, 
-                                     comercial, mail_comercial, is_frozen)
-        VALUES (2, ?, 'REPARACION', 'Cliente Test SRL', 'EQ-2024-002', 
-                'Selladora Industrial', '220V', 'Revisión preventiva',
-                'Ana Comercial', 'comercial@test.com', 0)
-    """, (fecha_hoy,))
+        INSERT INTO dml_fichas 
+        (numero_ficha, raypac_id, fecha_ingreso, tecnico, diagnostico_inicial,
+         diagnostico_reparacion, observaciones, estado_reparacion,
+         n_ciclos, tecnico_resp, tipo_trabajo)
+        VALUES (?, ?, ?, 'Juan Pérez', 'Motor de arrastre quemado, requiere reemplazo',
+                'Se reemplazó motor de arrastre y se probó funcionamiento', 
+                'Cliente reporta que el equipo dejó de funcionar tras una sobrecarga',
+                'EN REPARACION', 0, 'Juan Pérez', 'REPARACIÓN')
+    """, (numero_ficha_1, raypac_id_1, fecha_ayer))
+    ficha_id_1 = db.execute("SELECT last_insert_rowid() as id").fetchone()['id']
     
-    # 7. Crear ficha DML con ticket
-    db.execute("""
-        INSERT INTO dml_fichas (numero_ficha, raypac_id, fecha_ingreso, tecnico, 
-                                diagnostico_inicial, estado_reparacion, tecnico_resp)
-        VALUES (501, 1, ?, 'Técnico Demo', 'Equipo requiere revisión de motor y sellado',
-                'EN REPARACION', 'Técnico Demo')
-    """, (fecha_hoy,))
+    # Crear ticket
+    numero_ticket_1 = crear_ticket(ficha_id_1, 'EQ-2024-001')
     
-    ficha_id = db.execute("SELECT last_insert_rowid() as id").fetchone()['id']
-    
-    # Crear ticket para la ficha
-    numero_ticket = f"TK-2025-EQ-2024-001-{ficha_id:05d}"
-    db.execute("""
-        INSERT INTO tickets (numero_ticket, ficha_id, numero_serie, estado)
-        VALUES (?, ?, 'EQ-2024-001', 'ACTIVO')
-    """, (numero_ticket, ficha_id))
-    
-    # Crear partes de la ficha
+    # Partes del equipo
     partes = [
-        'ESTADO DEL EQUIPO', 'CARCAZA', 'CUBRE FEEDWHEEL', 'MANGO', 'BOTONES',
-        'MOTOR DE ARRASTRE', 'MOTOR DE SELLADO', 'CUCHILLA', 'SERVO',
-        'RUEDA DE ARRASTRE', 'RESORTE DE MANIJA', 'OTROS'
+        ('ESTADO DEL EQUIPO', 'INSPECCIONADO'), ('CARCAZA', 'OK'), ('CUBRE FEEDWHEEL', 'OK'),
+        ('MANGO', 'OK'), ('BOTONES', 'OK'), ('MOTOR DE ARRASTRE', 'REEMPLAZADO'),
+        ('MOTOR DE SELLADO', 'OK'), ('CUCHILLA', 'OK'), ('SERVO', 'OK'),
+        ('RUEDA DE ARRASTRE', 'OK'), ('RESORTE DE MANIJA', 'OK'), ('OTROS', 'OK')
     ]
     
-    for parte in partes:
-        db.execute("INSERT INTO dml_partes (ficha_id, nombre_parte, estado) VALUES (?, ?, 'POR INSPECCIONAR')",
-                   (ficha_id, parte))
+    for nombre_parte, estado in partes:
+        db.execute("""
+            INSERT INTO dml_partes (ficha_id, nombre_parte, estado)
+            VALUES (?, ?, ?)
+        """, (ficha_id_1, nombre_parte, estado))
     
-    # 8. Crear envío RAYPAC → DML (recibido)
+    # Repuesto utilizado
     db.execute("""
-        INSERT INTO envios_repuestos (numero_envio, fecha_envio, origen, destino, 
-                                       estado, numero_remito, fecha_recepcion)
-        VALUES ('RP-2024-00100', ?, 'RAYPAC', 'DML', 'RECIBIDO', 'ENV-001', ?)
-    """, (fecha_hoy, fecha_hoy))
+        INSERT INTO dml_repuestos 
+        (ficha_id, codigo_repuesto, descripcion, cantidad, cantidad_utilizada,
+         estado_repuesto, en_stock, en_falta)
+        VALUES (?, 'A000001', 'MOTOR DE ARRASTRE', 1, 1, 'EN STOCK', 1, 0)
+    """, (ficha_id_1,))
     
+    # Estadística de uso
+    db.execute("""
+        INSERT INTO estadisticas_repuestos 
+        (codigo_repuesto, item, cantidad_utilizada, fecha_ultimo_uso, total_usos)
+        VALUES ('A000001', 'MOTOR DE ARRASTRE', 1, ?, 1)
+    """, (fecha_ayer,))
+    
+    db.commit()
+    
+    # 7. INGRESO RAYPAC #2 (SIN REMITO, EDITABLE)
+    db.execute("""
+        INSERT INTO raypac_entries 
+        (numero_correlativo, fecha_recepcion, tipo_solicitud, cliente, numero_serie,
+         modelo_maquina, tipo_maquina, numero_bateria, numero_cargador,
+         diagnostico_ingreso, comercial, mail_comercial, is_frozen)
+        VALUES (2, ?, 'REPARACION', 'TechCorp SRL', 'EQ-2024-002',
+                'MB450', 'ELECTRICA', NULL, NULL,
+                'Cuchilla desgastada, requiere afilado o reemplazo',
+                'Pedro Martínez', 'pedro.martinez@raypac.com', 0)
+    """, (fecha_hoy,))
+    db.commit()
+    
+    # 8. ENVÍO RAYPAC→DML (RECIBIDO)
+    fecha_hace_2_dias = (datetime.now() - timedelta(days=2)).strftime("%Y-%m-%d")
+    
+    db.execute("""
+        INSERT INTO envios_repuestos 
+        (numero_remito, fecha_envio, fecha_recepcion, estado)
+        VALUES ('RP-2024-00100', ?, ?, 'RECIBIDO')
+    """, (fecha_hace_2_dias, fecha_ayer))
     envio_id = db.execute("SELECT last_insert_rowid() as id").fetchone()['id']
     
-    # Detalle del envío
-    db.execute("""
-        INSERT INTO envios_detalles (envio_id, codigo_repuesto, cantidad_enviada, cantidad_recibida)
-        VALUES (?, 'A000001', 3, 3)
-    """, (envio_id,))
+    detalles_envio = [('A000002', 2), ('A000007', 5)]
     
-    # 9. Crear estadística de uso
-    db.execute("""
-        INSERT INTO estadisticas_repuestos (codigo_repuesto, item, cantidad_utilizada, 
-                                             fecha_ultimo_uso, total_usos)
-        VALUES ('A000001', 'Correa de transmisión principal', 5, ?, 3)
-    """, (fecha_hoy,))
+    for codigo, cant in detalles_envio:
+        db.execute("""
+            INSERT INTO envios_repuestos_detalles (envio_id, codigo_repuesto, cantidad)
+            VALUES (?, ?, ?)
+        """, (envio_id, codigo, cant))
     
     db.commit()
 
