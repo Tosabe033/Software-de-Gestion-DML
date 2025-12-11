@@ -439,14 +439,53 @@ def login_required(view):
         return view(*args, **kwargs)
     return wrapped
 
-def role_required(*roles):
+def permission_required(read_roles=None, write_roles=None):
+    """
+    Decorator para control de permisos granular.
+    - read_roles: roles que pueden VER (lectura)
+    - write_roles: roles que pueden EDITAR (escritura)
+    Si solo se pasa write_roles, automáticamente tienen read también.
+    """
     def decorator(view):
         @wraps(view)
         def wrapped(*args, **kwargs):
             if "user_id" not in session:
                 return redirect(url_for("login"))
             user = get_current_user()
-            if not user:  # Usuario no existe
+            if not user:
+                session.clear()
+                return redirect(url_for("login"))
+            
+            user_role = user["role"]
+            
+            # ADMIN siempre tiene acceso completo
+            if user_role == "ADMIN":
+                return view(*args, **kwargs)
+            
+            # Verificar permisos de escritura (incluye lectura)
+            if write_roles and user_role in write_roles:
+                return view(*args, **kwargs)
+            
+            # Verificar permisos de solo lectura
+            if read_roles and user_role in read_roles:
+                # Pasar flag readonly a la vista
+                kwargs['readonly'] = True
+                return view(*args, **kwargs)
+            
+            flash("No tienes permiso para acceder a esta página.", "error")
+            return redirect(url_for("index"))
+        return wrapped
+    return decorator
+
+def role_required(*roles):
+    """Compatibilidad con código antiguo - todos tienen escritura."""
+    def decorator(view):
+        @wraps(view)
+        def wrapped(*args, **kwargs):
+            if "user_id" not in session:
+                return redirect(url_for("login"))
+            user = get_current_user()
+            if not user:
                 session.clear()
                 return redirect(url_for("login"))
             if user["role"] not in roles:
@@ -1051,8 +1090,8 @@ def apply_migrations():
 
 @app.route("/raypac")
 @login_required
-@role_required("ADMIN", "RAYPAC")
-def raypac_list():
+@permission_required(read_roles=["DML_ST"], write_roles=["RAYPAC"])
+def raypac_list(readonly=False):
     user = get_current_user()
     db = get_db()
     entries = db.execute("""
@@ -1063,7 +1102,7 @@ def raypac_list():
         ORDER BY r.created_at DESC
     """).fetchall()
     
-    return render_template("raypac_list.html", entries=entries, user_role=user['role'])
+    return render_template("raypac_list.html", entries=entries, user_role=user['role'], readonly=readonly)
 
 @app.route("/raypac/new", methods=["GET", "POST"])
 @login_required
@@ -1123,8 +1162,8 @@ def raypac_new():
 
 @app.route("/raypac/<int:id>")
 @login_required
-@role_required("ADMIN", "RAYPAC")
-def raypac_view(id):
+@permission_required(read_roles=["DML_ST"], write_roles=["RAYPAC"])
+def raypac_view(id, readonly=False):
     user = get_current_user()
     db = get_db()
     entry = db.execute("SELECT * FROM raypac_entries WHERE id = ?", (id,)).fetchone()
@@ -1133,7 +1172,7 @@ def raypac_view(id):
         flash("Registro no encontrado.", "error")
         return redirect(url_for("raypac_list"))
     
-    return render_template("raypac_view.html", entry=entry, user_role=user['role'])
+    return render_template("raypac_view.html", entry=entry, user_role=user['role'], readonly=readonly)
 
 @app.route("/raypac/<int:id>/edit", methods=["GET", "POST"])
 @login_required
@@ -1258,8 +1297,9 @@ def raypac_unfreeze(id):
 
 @app.route("/dml")
 @login_required
-@role_required("ADMIN", "DML_ST", "DML_REPUESTOS")
-def dml_list():
+@permission_required(read_roles=["RAYPAC", "DML_REPUESTOS"], write_roles=["DML_ST"])
+def dml_list(readonly=False):
+    user = get_current_user()
     db = get_db()
     fichas = db.execute("""
         SELECT f.*, r.cliente, r.numero_serie 
@@ -1269,7 +1309,7 @@ def dml_list():
         ORDER BY f.created_at DESC
     """).fetchall()
     
-    return render_template("dml_list.html", fichas=fichas)
+    return render_template("dml_list.html", fichas=fichas, user_role=user['role'], readonly=readonly)
 
 @app.route("/dml/new/<int:raypac_id>", methods=["GET", "POST"])
 @login_required
@@ -1339,8 +1379,9 @@ def dml_new(raypac_id):
 
 @app.route("/dml/<int:id>")
 @login_required
-@role_required("ADMIN", "DML_ST", "DML_REPUESTOS")
-def dml_view(id):
+@permission_required(read_roles=["RAYPAC", "DML_REPUESTOS"], write_roles=["DML_ST"])
+def dml_view(id, readonly=False):
+    user = get_current_user()
     db = get_db()
     ficha = db.execute("SELECT * FROM dml_fichas WHERE id = ?", (id,)).fetchone()
     
@@ -1366,7 +1407,8 @@ def dml_view(id):
         (id,)
     ).fetchall()
     
-    return render_template("dml_view.html", ficha=ficha, raypac=raypac, partes=partes, repuestos=repuestos)
+    return render_template("dml_view.html", ficha=ficha, raypac=raypac, partes=partes, repuestos=repuestos, 
+                           user_role=user['role'], readonly=readonly)
 
 @app.route("/dml/<int:id>/edit", methods=["GET", "POST"])
 @login_required
@@ -2082,8 +2124,8 @@ def envios_confirmar(id):
 
 @app.route("/stock")
 @login_required
-@role_required("ADMIN", "DML_REPUESTOS", "RAYPAC")
-def stock_list():
+@permission_required(read_roles=["DML_ST"], write_roles=["DML_REPUESTOS", "RAYPAC"])
+def stock_list(readonly=False):
     user = get_current_user()
     db = get_db()
     
@@ -2091,8 +2133,8 @@ def stock_list():
     if user['role'] == 'RAYPAC':
         # RAYPAC solo ve su stock (RAYPAC)
         ubicacion = "RAYPAC"
-    elif user['role'] == 'DML_REPUESTOS':
-        # DML_REPUESTOS solo ve su stock (DML)
+    elif user['role'] in ['DML_REPUESTOS', 'DML_ST']:
+        # DML_REPUESTOS y DML_ST ven stock de DML
         ubicacion = "DML"
     else:
         # ADMIN puede ver ambos (parámetro en URL)
@@ -2132,7 +2174,8 @@ def stock_list():
                          user=user, 
                          rows=stocks_con_alerta, 
                          ubicacion=ubicacion,
-                         ubicaciones_disponibles=ubicaciones_disponibles)
+                         ubicaciones_disponibles=ubicaciones_disponibles,
+                         readonly=readonly)
 
 @app.route("/stock/new", methods=["GET", "POST"])
 @login_required

@@ -60,6 +60,7 @@
     <!-- ACCIONES -->
     <div class="row mb-3">
         <div class="col-md-12">
+            {% if not readonly and user_role in ['ADMIN', 'RAYPAC'] %}
             <a href="{{ url_for('raypac_edit', id=entry.id) }}" class="btn btn-primary">Editar</a>
             
             {% if not entry.is_frozen %}
@@ -67,6 +68,9 @@
                 <input type="text" name="numero_remito" class="form-control d-inline-block" style="width: auto;" placeholder="N° Remito (dejar vacío para autogenerar)">
                 <button type="submit" class="btn btn-success">Freezar y Enviar a ST</button>
             </form>
+            {% endif %}
+            {% elif readonly %}
+            <span class="badge badge-info" style="font-size: 16px;">Modo Solo Lectura</span>
             {% endif %}
             
             <a href="{{ url_for('raypac_list') }}" class="btn btn-secondary">Volver</a>

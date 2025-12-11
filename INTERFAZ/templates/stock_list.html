@@ -6,19 +6,24 @@
         <div class="col-md-12">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h2>Stock {{ ubicacion }}</h2>
-                {% if ubicaciones_disponibles %}
-                <div class="btn-group" role="group">
-                    {% for ubi in ubicaciones_disponibles %}
-                    <a href="{{ url_for('stock_list', ubicacion=ubi) }}" 
-                       class="btn btn-{{ 'primary' if ubi == ubicacion else 'outline-primary' }}">
-                        {{ ubi }}
-                    </a>
-                    {% endfor %}
+                <div>
+                    {% if readonly %}
+                    <span class="badge badge-info" style="font-size: 14px; margin-right: 10px;">Modo Solo Lectura</span>
+                    {% endif %}
+                    {% if ubicaciones_disponibles %}
+                    <div class="btn-group" role="group">
+                        {% for ubi in ubicaciones_disponibles %}
+                        <a href="{{ url_for('stock_list', ubicacion=ubi) }}" 
+                           class="btn btn-{{ 'primary' if ubi == ubicacion else 'outline-primary' }}">
+                            {{ ubi }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
                 </div>
-                {% endif %}
             </div>
             
-            {% if user.role in ['ADMIN', 'DML_REPUESTOS', 'RAYPAC'] %}
+            {% if user.role in ['ADMIN', 'DML_REPUESTOS', 'RAYPAC'] and not readonly %}
             <div class="d-flex gap-2 mb-3">
                 <a href="{{ url_for('stock_new', ubicacion=ubicacion) }}" class="btn btn-success">+ Nuevo Repuesto</a>
                 {% if user.role in ['ADMIN', 'DML_REPUESTOS'] %}

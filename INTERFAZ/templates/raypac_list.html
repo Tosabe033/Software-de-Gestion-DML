@@ -9,10 +9,12 @@
             <h2>Ingresos RAYPAC</h2>
         </div>
         <div class="col-md-6 text-right">
-            {% if session.get('user_id') %}
+            {% if session.get('user_id') and not readonly and user_role in ['ADMIN', 'RAYPAC'] %}
             <a class="btn btn-success" href="{{ url_for('raypac_new') }}">
                 <i class="fas fa-plus"></i> Nuevo Ingreso
             </a>
+            {% elif readonly %}
+            <span class="badge badge-info" style="font-size: 14px;">Modo Solo Lectura</span>
             {% endif %}
         </div>
     </div>

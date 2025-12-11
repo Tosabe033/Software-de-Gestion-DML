@@ -9,6 +9,9 @@
             <h2>Fichas de Servicio Técnico DML</h2>
         </div>
         <div class="col-md-6 text-right">
+            {% if readonly %}
+            <span class="badge badge-info" style="font-size: 14px; margin-right: 10px;">Modo Solo Lectura</span>
+            {% endif %}
             <a href="{{ url_for('raypac_list') }}" class="btn btn-info">
                 Ver Ingresos RAYPAC
             </a>

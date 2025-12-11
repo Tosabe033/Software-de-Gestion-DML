@@ -317,6 +317,11 @@
 
     <!-- BOTONES DE ACCIÓN -->
     <div class="btn-group">
+        {% if readonly %}
+        <span class="badge badge-info" style="display: inline-block; padding: 15px 20px; background-color: #17a2b8; color: white; border-radius: 5px; font-weight: bold; margin-right: 10px; font-size: 16px;">
+            👁️ Modo Solo Lectura
+        </span>
+        {% else %}
         <a href="{{ url_for('dml_edit', id=ficha.id) }}" class="btn btn-primary btn-lg" style="margin-right: 10px;">
             ✏️ Editar Ficha
         </a>
@@ -327,15 +332,7 @@
                 🎫 Crear Ticket
             </button>
         </form>
-        {% else %}
-        <a href="{{ url_for('ticket_view', numero_ticket=ficha.numero_ticket) }}" class="btn btn-info btn-lg" style="margin-right: 10px;" target="_blank">
-            🔍 Ver Ticket: {{ ficha.numero_ticket }}
-        </a>
         {% endif %}
-        
-        <a href="{{ url_for('descargar_ficha_pdf', id=ficha.id) }}" class="btn btn-success btn-lg" style="margin-right: 10px;" target="_blank">
-            📄 Descargar PDF
-        </a>
         
         {% if not ficha.is_closed %}
         <form method="POST" action="{{ url_for('dml_close', id=ficha.id) }}" style="display: inline;" onsubmit="return confirm('¿Deseas FINALIZAR esta ficha? Se enviará notificación al comercial.');">
@@ -348,6 +345,17 @@
             ✅ FICHA FINALIZADA
         </span>
         {% endif %}
+        {% endif %}
+        
+        {% if ficha.numero_ticket %}
+        <a href="{{ url_for('ticket_view', numero_ticket=ficha.numero_ticket) }}" class="btn btn-info btn-lg" style="margin-right: 10px;" target="_blank">
+            🔍 Ver Ticket: {{ ficha.numero_ticket }}
+        </a>
+        {% endif %}
+        
+        <a href="{{ url_for('descargar_ficha_pdf', id=ficha.id) }}" class="btn btn-success btn-lg" style="margin-right: 10px;" target="_blank">
+            📄 Descargar PDF
+        </a>
         
         <a href="{{ url_for('dml_list') }}" class="btn btn-secondary btn-lg">
             ⬅️ Volver al Listado
