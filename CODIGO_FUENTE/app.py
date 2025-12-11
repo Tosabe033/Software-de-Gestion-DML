@@ -2842,8 +2842,8 @@ def usuario_toggle(id):
 
 @app.route("/estadisticas")
 @login_required
-@role_required("ADMIN", "DML_REPUESTOS")
-def estadisticas():
+@permission_required(read_roles=["DML_ST"], write_roles=["DML_REPUESTOS"])
+def estadisticas(readonly=False):
     """Dashboard de estadísticas de repuestos más utilizados."""
     user = get_current_user()
     db = get_db()
@@ -2853,7 +2853,7 @@ def estadisticas():
         ubicacion = request.args.get("ubicacion", "DML")
         ubicaciones_disponibles = ["RAYPAC", "DML"]
     else:
-        ubicacion = "DML"  # DML_REPUESTOS solo ve DML
+        ubicacion = "DML"  # DML_REPUESTOS y DML_ST solo ven DML
         ubicaciones_disponibles = []
     
     # Top 10 repuestos más utilizados (solo tiene sentido para DML, donde se usan en reparaciones)
@@ -2906,7 +2906,8 @@ def estadisticas():
         repuestos_criticos=repuestos_criticos,
         stats=stats,
         ubicacion=ubicacion,
-        ubicaciones_disponibles=ubicaciones_disponibles
+        ubicaciones_disponibles=ubicaciones_disponibles,
+        readonly=readonly
     )
 
 # ======================== MAIN ========================

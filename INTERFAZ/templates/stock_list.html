@@ -26,9 +26,13 @@
             {% if user.role in ['ADMIN', 'DML_REPUESTOS', 'RAYPAC'] and not readonly %}
             <div class="d-flex gap-2 mb-3">
                 <a href="{{ url_for('stock_new', ubicacion=ubicacion) }}" class="btn btn-success">+ Nuevo Repuesto</a>
-                {% if user.role in ['ADMIN', 'DML_REPUESTOS'] %}
+                {% if user.role in ['ADMIN', 'DML_REPUESTOS', 'DML_ST'] %}
                 <a href="{{ url_for('estadisticas') }}" class="btn btn-info">📊 Estadísticas de uso</a>
                 {% endif %}
+            </div>
+            {% elif user.role == 'DML_ST' and readonly %}
+            <div class="d-flex gap-2 mb-3">
+                <a href="{{ url_for('estadisticas') }}" class="btn btn-info">📊 Estadísticas de uso</a>
             </div>
             {% endif %}
             
