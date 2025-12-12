@@ -2728,6 +2728,7 @@ def envios_confirmar(id):
             
             # Agregar a stock de DML
             ajustar_stock_ubicacion(codigo, "DML", qty)
+            actualizar_estado_alerta_stock(codigo)
         
         # Marcar envío como recibido
         db.execute(
@@ -2738,15 +2739,6 @@ def envios_confirmar(id):
                    updated_at = CURRENT_TIMESTAMP 
                WHERE id = ?""",
             (fecha_recepcion, user['id'], id)
-        )
-        db.commit()
-                )
-            ajustar_stock_ubicacion(codigo, "DML", qty)
-            actualizar_estado_alerta_stock(codigo)
-
-        db.execute(
-            "UPDATE envios_repuestos SET estado = 'RECIBIDO', fecha_recepcion = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
-            (datetime.now().strftime("%Y-%m-%d"), id)
         )
         db.commit()
 
