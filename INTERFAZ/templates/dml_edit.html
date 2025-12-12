@@ -218,7 +218,17 @@
                     <span style="color: #f57f17; font-weight: bold;">⚠️ ESTADO INDEFINIDO</span>
                     {% endif %}
                 </div>
-                <div style="margin-left: 10px;">
+                <div style="margin-left: 10px; display: flex; gap: 5px;">
+                    {% if repuesto.en_falta %}
+                    <form method="POST" action="{{ url_for('mover_repuesto_a_stock', ficha_id=ficha.id, repuesto_id=repuesto.id) }}" 
+                          style="display: inline;">
+                        <button type="submit" class="btn btn-warning btn-sm" 
+                                onclick="return confirm('¿Confirmar que el repuesto {{ repuesto.codigo_repuesto }} ya está disponible?')" 
+                                title="Marcar como disponible cuando llegue el stock">
+                            🔄 Mover a Stock
+                        </button>
+                    </form>
+                    {% endif %}
                     <form method="POST" action="{{ url_for('eliminar_repuesto', ficha_id=ficha.id, repuesto_id=repuesto.id) }}" 
                           style="display: inline;">
                         <button type="submit" class="btn btn-danger btn-sm" 
@@ -265,9 +275,98 @@
 
         <script>
         // Validación de stock en tiempo real
+        let stockDisponible = 0;
+        let stockSuficiente = false;
+        
         document.getElementById('codigo_repuesto').addEventListener('blur', function() {
             const codigo = this.value.trim().toUpperCase();
             const cantidad = parseInt(document.getElementById('cantidad_utilizada').value) || 1;
+            
+            if (!codigo) return;
+            
+            // Buscar en la tabla de repuestos de la página (si existen)
+            const repuestos = {{ repuestos|tojson }};
+            const existe = repuestos.some(r => r.codigo_repuesto === codigo);
+            
+            if (existe) {
+                document.getElementById('stock_alert').style.display = 'block';
+                document.getElementById('stock_alert').style.backgroundColor = '#fff3cd';
+                document.getElementById('stock_alert').style.color = '#856404';
+                document.getElementById('stock_alert').style.border = '2px solid #ffc107';
+                document.getElementById('stock_alert').innerHTML = '⚠️ Este repuesto ya está agregado a la ficha.';
+                return;
+            }
+            
+            // Consultar stock real desde el servidor
+            fetch(`/api/verificar-stock/${codigo}`)
+                .then(response => response.json())
+                .then(data => {
+                    const alertDiv = document.getElementById('stock_alert');
+                    alertDiv.style.display = 'block';
+                    
+                    stockDisponible = data.stock || 0;
+                    stockSuficiente = stockDisponible >= cantidad;
+                    
+                    if (!data.existe) {
+                        alertDiv.style.backgroundColor = '#f8d7da';
+                        alertDiv.style.color = '#721c24';
+                        alertDiv.style.border = '2px solid #f44336';
+                        alertDiv.innerHTML = '❌ REPUESTO NO EXISTE en el catálogo. Verifique el código.';
+                        stockSuficiente = false;
+                    } else if (stockDisponible === 0) {
+                        alertDiv.style.backgroundColor = '#f8d7da';
+                        alertDiv.style.color = '#721c24';
+                        alertDiv.style.border = '3px solid #f44336';
+                        alertDiv.innerHTML = `🛑 <strong>SIN STOCK</strong> - El repuesto se marcará como EN FALTA. Disponible: ${stockDisponible} unidades.`;
+                    } else if (stockDisponible === 1) {
+                        alertDiv.style.backgroundColor = '#fff3cd';
+                        alertDiv.style.color = '#856404';
+                        alertDiv.style.border = '2px solid #ffc107';
+                        alertDiv.innerHTML = `⚠️ <strong>ÚLTIMO REPUESTO</strong> - Disponible: ${stockDisponible} unidad. Será marcado EN STOCK y descontado.`;
+                    } else if (stockDisponible === 2) {
+                        alertDiv.style.backgroundColor = '#fff3cd';
+                        alertDiv.style.color = '#856404';
+                        alertDiv.style.border = '2px solid #ff9800';
+                        alertDiv.innerHTML = `🟠 <strong>STOCK BAJO</strong> - Disponible: ${stockDisponible} unidades. Considere solicitar más.`;
+                    } else if (stockDisponible < cantidad) {
+                        alertDiv.style.backgroundColor = '#fff3cd';
+                        alertDiv.style.color = '#856404';
+                        alertDiv.style.border = '2px solid #ff9800';
+                        alertDiv.innerHTML = `⚠️ <strong>STOCK INSUFICIENTE</strong> - Necesita: ${cantidad}, Disponible: ${stockDisponible}. Se marcará EN FALTA.`;
+                        stockSuficiente = false;
+                    } else {
+                        alertDiv.style.backgroundColor = '#d4edda';
+                        alertDiv.style.color = '#155724';
+                        alertDiv.style.border = '2px solid #4caf50';
+                        alertDiv.innerHTML = `✅ <strong>DISPONIBLE</strong> - Stock: ${stockDisponible} unidades. Se descontará automáticamente.`;
+                    }
+                })
+                .catch(error => {
+                    console.error('Error verificando stock:', error);
+                });
+        });
+        
+        // Validar cantidad cambios
+        document.getElementById('cantidad_utilizada').addEventListener('change', function() {
+            document.getElementById('codigo_repuesto').dispatchEvent(new Event('blur'));
+        });
+        
+        // Confirmación antes de agregar sin stock
+        document.getElementById('form_agregar_repuesto').addEventListener('submit', function(e) {
+            if (stockDisponible === 0) {
+                if (!confirm('⚠️ ADVERTENCIA: Este repuesto NO tiene stock disponible.\n\nSe agregará como EN FALTA y deberá esperarse hasta que llegue nuevo stock.\n\n¿Desea continuar?')) {
+                    e.preventDefault();
+                    return false;
+                }
+            } else if (!stockSuficiente) {
+                const cantidad = parseInt(document.getElementById('cantidad_utilizada').value) || 1;
+                if (!confirm(`⚠️ ADVERTENCIA: Stock insuficiente.\n\nNecesita: ${cantidad} unidades\nDisponible: ${stockDisponible} unidades\n\nSe marcará como EN FALTA.\n\n¿Desea continuar?`)) {
+                    e.preventDefault();
+                    return false;
+                }
+            }
+        });
+        </script>
             const alertDiv = document.getElementById('stock_alert');
             
             if (!codigo) {
@@ -305,9 +404,61 @@
         // Confirmar si hay alertas
         document.getElementById('form_agregar_repuesto').addEventListener('submit', function(e) {
             const alertDiv = document.getElementById('stock_alert');
+            const alertText = alertDiv.textContent.trim();
+            
             if (alertDiv.style.display !== 'none') {
                 e.preventDefault();
-                alert('⚠️ Por favor resuelve las alertas antes de agregar el repuesto.');
+                
+                // Mostrar modal de confirmación con Bootstrap
+                const modalHtml = `
+                    <div class="modal fade" id="stockAlertModal" tabindex="-1" aria-labelledby="stockAlertModalLabel" aria-hidden="true">
+                        <div class="modal-dialog modal-dialog-centered">
+                            <div class="modal-content">
+                                <div class="modal-header bg-danger text-white">
+                                    <h5 class="modal-title" id="stockAlertModalLabel">
+                                        <i class="bi bi-exclamation-triangle-fill"></i> ALERTA DE STOCK
+                                    </h5>
+                                    <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="alert alert-danger mb-3">
+                                        <h5><i class="bi bi-x-circle"></i> ${alertText}</h5>
+                                    </div>
+                                    <p class="fw-bold">¿Está seguro que desea agregar este repuesto sin stock disponible?</p>
+                                    <p class="text-muted mb-0">El repuesto quedará marcado como "EN FALTA" y deberá ser gestionado posteriormente.</p>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                        <i class="bi bi-x-circle"></i> Cancelar
+                                    </button>
+                                    <button type="button" class="btn btn-danger" id="confirmAddRepuesto">
+                                        <i class="bi bi-check-circle"></i> Agregar de todas formas
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                
+                // Insertar modal si no existe
+                if (!document.getElementById('stockAlertModal')) {
+                    document.body.insertAdjacentHTML('beforeend', modalHtml);
+                }
+                
+                // Mostrar modal
+                const modal = new bootstrap.Modal(document.getElementById('stockAlertModal'));
+                modal.show();
+                
+                // Botón de confirmar
+                document.getElementById('confirmAddRepuesto').addEventListener('click', function() {
+                    modal.hide();
+                    // Remover el listener temporalmente para permitir el submit
+                    const form = document.getElementById('form_agregar_repuesto');
+                    const newForm = form.cloneNode(true);
+                    form.parentNode.replaceChild(newForm, form);
+                    newForm.submit();
+                });
+                
                 return false;
             }
         });

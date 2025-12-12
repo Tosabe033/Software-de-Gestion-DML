@@ -1067,13 +1067,25 @@ def index():
             AND NOT EXISTS (SELECT 1 FROM dml_fichas f WHERE f.raypac_id = r.id)
         """).fetchone()['total']
         
+        # Repuestos que estaban EN FALTA y ahora tienen stock disponible
+        repuestos_disponibles = db.execute("""
+            SELECT COUNT(DISTINCT dr.codigo_repuesto) AS total
+            FROM dml_repuestos dr
+            JOIN dml_fichas f ON f.id = dr.ficha_id
+            JOIN stock_ubicaciones su ON su.codigo_repuesto = dr.codigo_repuesto AND su.ubicacion = 'DML'
+            WHERE dr.en_falta = 1 
+            AND f.is_closed = 0
+            AND su.cantidad >= dr.cantidad_utilizada
+        """).fetchone()['total']
+        
         stats = {
             "fichas_revision_inicial": count("SELECT COUNT(*) AS total FROM dml_fichas WHERE estado_reparacion = 'A LA ESPERA DE REVISIÓN'"),
             "fichas_en_reparacion": count("SELECT COUNT(*) AS total FROM dml_fichas WHERE estado_reparacion = 'EN REPARACIÓN'"),
             "fichas_espera_repuestos": count("SELECT COUNT(*) AS total FROM dml_fichas WHERE estado_reparacion = 'A LA ESPERA DE REPUESTOS'"),
             "fichas_listas": count("SELECT COUNT(*) AS total FROM dml_fichas WHERE estado_reparacion = 'MÁQUINA LISTA PARA RETIRAR'"),
             "equipos_raypac_pendientes": equipos_pendientes,
-            "tickets_activos": count("SELECT COUNT(*) AS total FROM tickets WHERE estado != 'CERRADO'")
+            "tickets_activos": count("SELECT COUNT(*) AS total FROM tickets WHERE estado != 'CERRADO'"),
+            "repuestos_disponibles": repuestos_disponibles
         }
     else:  # ADMIN
         stats = {
@@ -1686,6 +1698,68 @@ def marcar_repuesto_llegada(id, repuesto_id):
               f"{repuesto['codigo_repuesto']}")
     
     return jsonify({"success": True}), 200
+
+@app.route("/dml/<int:ficha_id>/repuestos/mover-a-stock/<int:repuesto_id>", methods=["POST"])
+@login_required
+@role_required("ADMIN", "DML_ST", "DML_REPUESTOS")
+def mover_repuesto_a_stock(ficha_id, repuesto_id):
+    """
+    Mueve un repuesto de EN FALTA a EN STOCK cuando llega nueva disponibilidad.
+    Descuenta del inventario y actualiza el estado.
+    """
+    user = get_current_user()
+    db = get_db()
+    
+    # Obtener el repuesto
+    repuesto = db.execute("""
+        SELECT dr.*, m.item as descripcion
+        FROM dml_repuestos dr
+        LEFT JOIN matriz_repuestos m ON m.codigo_repuesto = dr.codigo_repuesto
+        WHERE dr.id = ? AND dr.ficha_id = ?
+    """, (repuesto_id, ficha_id)).fetchone()
+    
+    if not repuesto:
+        flash("Repuesto no encontrado.", "error")
+        return redirect(url_for("dml_edit", id=ficha_id))
+    
+    # Verificar stock actual
+    stock = db.execute("""
+        SELECT cantidad FROM stock_ubicaciones 
+        WHERE codigo_repuesto = ? AND ubicacion = 'DML'
+    """, (repuesto['codigo_repuesto'],)).fetchone()
+    
+    if not stock or stock['cantidad'] < repuesto['cantidad_utilizada']:
+        flash(f"⚠️ No hay stock suficiente de {repuesto['codigo_repuesto']}. Disponible: {stock['cantidad'] if stock else 0}, Necesario: {repuesto['cantidad_utilizada']}", "error")
+        return redirect(url_for("dml_edit", id=ficha_id))
+    
+    # Actualizar estado a EN STOCK
+    db.execute("""
+        UPDATE dml_repuestos 
+        SET en_stock = 1, en_falta = 0, estado_repuesto = 'COLOCADO'
+        WHERE id = ?
+    """, (repuesto_id,))
+    
+    # Descontar del stock
+    db.execute("""
+        UPDATE stock_ubicaciones 
+        SET cantidad = cantidad - ?, updated_at = CURRENT_TIMESTAMP
+        WHERE codigo_repuesto = ? AND ubicacion = 'DML'
+    """, (repuesto['cantidad_utilizada'], repuesto['codigo_repuesto']))
+    
+    # Actualizar matriz_repuestos
+    db.execute("""
+        UPDATE matriz_repuestos 
+        SET cantidad_actual = cantidad_actual - ?
+        WHERE codigo_repuesto = ?
+    """, (repuesto['cantidad_utilizada'], repuesto['codigo_repuesto']))
+    
+    db.commit()
+    
+    log_action(user['id'], "MOVER_REPUESTO_A_STOCK", "dml_repuestos", repuesto_id, 
+              f"EN FALTA", f"EN STOCK - {repuesto['codigo_repuesto']}")
+    
+    flash(f"✅ Repuesto {repuesto['codigo_repuesto']} movido a EN STOCK y descontado del inventario.", "success")
+    return redirect(url_for("dml_edit", id=ficha_id))
 
 @app.route("/dml/<int:ficha_id>/repuestos/eliminar/<int:repuesto_id>", methods=["POST"])
 @login_required

@@ -297,6 +297,10 @@
                             <span><i class="bi bi-box-seam text-warning"></i> Equipos RAYPAC pendientes de recepción</span>
                             <span class="badge bg-warning text-dark">{{ stats.equipos_raypac_pendientes }}</span>
                         </div>
+                        <div class="list-group-item d-flex justify-content-between align-items-center" style="{% if stats.repuestos_disponibles > 0 %}background-color: #d1ecf1;{% endif %}">
+                            <span><i class="bi bi-bag-check-fill text-success"></i> Repuestos ahora disponibles</span>
+                            <span class="badge bg-success">{{ stats.repuestos_disponibles }}</span>
+                        </div>
                         <div class="list-group-item d-flex justify-content-between align-items-center">
                             <span><i class="bi bi-check-circle"></i> Listas para retirar</span>
                             <span class="badge bg-success">{{ stats.fichas_listas }}</span>
