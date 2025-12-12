@@ -1062,7 +1062,9 @@ def index():
             "fichas_revision_inicial": count("SELECT COUNT(*) AS total FROM dml_fichas WHERE estado_reparacion = 'A LA ESPERA DE REVISIÓN'"),
             "fichas_en_reparacion": count("SELECT COUNT(*) AS total FROM dml_fichas WHERE estado_reparacion = 'EN REPARACIÓN'"),
             "fichas_espera_repuestos": count("SELECT COUNT(*) AS total FROM dml_fichas WHERE estado_reparacion = 'A LA ESPERA DE REPUESTOS'"),
-            "fichas_listas": count("SELECT COUNT(*) AS total FROM dml_fichas WHERE estado_reparacion = 'MÁQUINA LISTA PARA RETIRAR'")
+            "fichas_listas": count("SELECT COUNT(*) AS total FROM dml_fichas WHERE estado_reparacion = 'MÁQUINA LISTA PARA RETIRAR'"),
+            "stock_bajo": count("SELECT COUNT(*) AS total FROM stock_ubicaciones WHERE ubicacion = 'DML' AND cantidad <= 2"),
+            "tickets_activos": count("SELECT COUNT(*) AS total FROM tickets WHERE estado != 'CERRADO'")
         }
     else:  # ADMIN
         stats = {
