@@ -97,21 +97,21 @@
                                 <label for="comercial" class="form-label">Comercial Responsable *</label>
                                 <select class="form-control" id="comercial" name="comercial" required>
                                     <option value="">Selecciona</option>
-                                    <option value="Ezequiel Pacheco" {% if entry and entry.comercial == 'Ezequiel Pacheco' %}selected{% endif %}>Ezequiel Pacheco</option>
-                                    <option value="Leonardo Gastager" {% if entry and entry.comercial == 'Leonardo Gastager' %}selected{% endif %}>Leonardo Gastager</option>
-                                    <option value="Luciana Gregorio" {% if entry and entry.comercial == 'Luciana Gregorio' %}selected{% endif %}>Luciana Gregorio</option>
-                                    <option value="Luciana Paradiso" {% if entry and entry.comercial == 'Luciana Paradiso' %}selected{% endif %}>Luciana Paradiso</option>
-                                    <option value="Daniela Sofio" {% if entry and entry.comercial == 'Daniela Sofio' %}selected{% endif %}>Daniela Sofio</option>
-                                    <option value="Hernán Rivero" {% if entry and entry.comercial == 'Hernán Rivero' %}selected{% endif %}>Hernán Rivero</option>
-                                    <option value="Matias Chaubell" {% if entry and entry.comercial == 'Matias Chaubell' %}selected{% endif %}>Matias Chaubell</option>
-                                    <option value="Paola Isanelli" {% if entry and entry.comercial == 'Paola Isanelli' %}selected{% endif %}>Paola Isanelli</option>
-                                    <option value="Romina Gamarra" {% if entry and entry.comercial == 'Romina Gamarra' %}selected{% endif %}>Romina Gamarra</option>
+                                    <option value="Ezequiel Pacheco" data-email="ezequiel.pacheco@raypac.net" {% if entry and entry.comercial == 'Ezequiel Pacheco' %}selected{% endif %}>Ezequiel Pacheco</option>
+                                    <option value="Leonardo Gastager" data-email="leonardo.gastager@raypac.net" {% if entry and entry.comercial == 'Leonardo Gastager' %}selected{% endif %}>Leonardo Gastager</option>
+                                    <option value="Luciana Gregorio" data-email="luciana.gregorio@raypac.net" {% if entry and entry.comercial == 'Luciana Gregorio' %}selected{% endif %}>Luciana Gregorio</option>
+                                    <option value="Luciana Paradiso" data-email="luciana.paradiso@raypac.net" {% if entry and entry.comercial == 'Luciana Paradiso' %}selected{% endif %}>Luciana Paradiso</option>
+                                    <option value="Daniela Sofio" data-email="daniela.sofio@raypac.net" {% if entry and entry.comercial == 'Daniela Sofio' %}selected{% endif %}>Daniela Sofio</option>
+                                    <option value="Hernán Rivero" data-email="hernan.rivero@raypac.net" {% if entry and entry.comercial == 'Hernán Rivero' %}selected{% endif %}>Hernán Rivero</option>
+                                    <option value="Matias Chaubell" data-email="matias.chaubell@raypac.net" {% if entry and entry.comercial == 'Matias Chaubell' %}selected{% endif %}>Matias Chaubell</option>
+                                    <option value="Paola Isanelli" data-email="paola.isabelli@raypac.net" {% if entry and entry.comercial == 'Paola Isanelli' %}selected{% endif %}>Paola Isanelli</option>
+                                    <option value="Romina Gamarra" data-email="romina.gamarra@raypac.net" {% if entry and entry.comercial == 'Romina Gamarra' %}selected{% endif %}>Romina Gamarra</option>
                                 </select>
                             </div>
                             <div class="col-md-6">
                                 <label for="mail_comercial" class="form-label">Mail Comercial *</label>
                                 <input type="email" class="form-control" id="mail_comercial" name="mail_comercial" 
-                                       value="{{ entry.mail_comercial if entry else '' }}" required>
+                                       value="{{ entry.mail_comercial if entry else '' }}" required readonly style="background-color: #e9ecef;">
                             </div>
                         </div>
 
@@ -136,4 +136,31 @@
         </div>
     </div>
 </div>
+
+<script>
+    // Autocompletar email cuando se selecciona un comercial
+    document.getElementById('comercial').addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const email = selectedOption.getAttribute('data-email');
+        const emailInput = document.getElementById('mail_comercial');
+        
+        if (email) {
+            emailInput.value = email;
+        } else {
+            emailInput.value = '';
+        }
+    });
+    
+    // Al cargar la página, si ya hay un comercial seleccionado, completar el email
+    window.addEventListener('DOMContentLoaded', function() {
+        const comercialSelect = document.getElementById('comercial');
+        const selectedOption = comercialSelect.options[comercialSelect.selectedIndex];
+        const email = selectedOption.getAttribute('data-email');
+        const emailInput = document.getElementById('mail_comercial');
+        
+        if (email && !emailInput.value) {
+            emailInput.value = email;
+        }
+    });
+</script>
 {% endblock %}
