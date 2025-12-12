@@ -9,135 +9,67 @@
     {% set role = user.role %}
 
     {% if role == 'RAYPAC' %}
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <a href="{{ url_for('raypac_list') }}" class="text-decoration-none text-dark">
-                <div class="card text-center shadow-sm position-relative">
-                    <div class="card-body">
-                        <h5 class="card-title"><i class="bi bi-box-seam"></i> Equipos registrados</h5>
-                        <h2 class="text-primary">{{ stats.equipos_registrados }}</h2>
-                        <span class="stretched-link"></span>
-                    </div>
-                </div>
-            </a>
-        </div>
-        <div class="col-md-3">
-            <a href="{{ url_for('raypac_list') }}" class="text-decoration-none text-dark">
-                <div class="card text-center shadow-sm position-relative">
-                    <div class="card-body">
-                        <h5 class="card-title"><i class="bi bi-truck"></i> Sin remito</h5>
-                        <h2 class="text-warning">{{ stats.equipos_sin_remito }}</h2>
-                        <span class="stretched-link"></span>
-                    </div>
-                </div>
-            </a>
-        </div>
-        <div class="col-md-3">
-            <a href="{{ url_for('envios_list') }}" class="text-decoration-none text-dark">
-                <div class="card text-center shadow-sm position-relative">
-                    <div class="card-body">
-                        <h5 class="card-title"><i class="bi bi-send"></i> Envíos pendientes</h5>
-                        <h2 class="text-info">{{ stats.envios_pendientes }}</h2>
-                        <span class="stretched-link"></span>
-                    </div>
-                </div>
-            </a>
-        </div>
-        <div class="col-md-3">
-            <a href="{{ url_for('stock_list') }}" class="text-decoration-none text-dark">
-                <div class="card text-center shadow-sm position-relative">
-                    <div class="card-body">
-                        <h5 class="card-title"><i class="bi bi-exclamation-triangle"></i> Stock RAYPAC ≤2</h5>
-                        <h2 class="text-danger">{{ stats.stock_bajo }}</h2>
-                        <span class="stretched-link"></span>
-                    </div>
-                </div>
-            </a>
-        </div>
+    <div class="alert alert-info mb-4">
+        <i class="bi bi-info-circle"></i> <strong>Dashboard RAYPAC:</strong> Gestión de ingresos desde casa matriz y envíos de repuestos a DML.
     </div>
-
-    <div class="row">
-        <div class="col-md-6">
-            <div class="card shadow-sm">
-                <div class="card-header bg-info text-white">
-                    <h5 class="mb-0">Acciones Rápidas</h5>
-                </div>
-                <div class="card-body">
-                    <div class="list-group">
-                        <a href="{{ url_for('raypac_new') }}" class="list-group-item list-group-item-action"><i class="bi bi-plus-circle"></i> Nuevo Ingreso RAYPAC</a>
-                        <a href="{{ url_for('raypac_list') }}" class="list-group-item list-group-item-action"><i class="bi bi-box-seam"></i> Ver ingresos RAYPAC</a>
-                        <a href="{{ url_for('envios_new') }}" class="list-group-item list-group-item-action"><i class="bi bi-truck"></i> Enviar repuestos a DML</a>
-                        <a href="{{ url_for('stock_list') }}" class="list-group-item list-group-item-action"><i class="bi bi-bag-check"></i> Stock RAYPAC</a>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-6">
-            <div class="card shadow-sm">
-                <div class="card-header bg-light d-flex align-items-center">
-                    <h5 class="mb-0">Notificaciones</h5>
-                </div>
-                <div class="card-body p-0">
-                    <div class="list-group list-group-flush">
-                        <div class="list-group-item d-flex justify-content-between align-items-center">
-                            <span><i class="bi bi-truck"></i> Ingresos sin remito</span>
-                            <span class="badge bg-warning text-dark">{{ stats.equipos_sin_remito }}</span>
-                        </div>
-                        <div class="list-group-item d-flex justify-content-between align-items-center">
-                            <span><i class="bi bi-send"></i> Envíos pendientes a DML</span>
-                            <span class="badge bg-info text-dark">{{ stats.envios_pendientes }}</span>
-                        </div>
-                        <div class="list-group-item d-flex justify-content-between align-items-center">
-                            <span><i class="bi bi-exclamation-triangle"></i> Repuestos en alerta (≤2)</span>
-                            <span class="badge bg-danger">{{ stats.stock_bajo }}</span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    {% elif role == 'DML_REPUESTOS' %}
-    <div class="row mb-4">
+    
+    <h4 class="mb-3"><i class="bi bi-box-seam"></i> Control de Ingresos</h4>
+    <div class="row mb-4 g-3">
         <div class="col-md-3">
-            <a href="{{ url_for('stock_list') }}" class="text-decoration-none text-dark">
-                <div class="card text-center shadow-sm position-relative">
-                    <div class="card-body">
-                        <h5 class="card-title"><i class="bi bi-exclamation-triangle"></i> Stock DML ≤2</h5>
-                        <h2 class="text-danger">{{ stats.stock_bajo }}</h2>
+            <a href="{{ url_for('raypac_list') }}" class="text-decoration-none">
+                <div class="card shadow-sm h-100 position-relative" style="border-left: 5px solid #007bff; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+                    <div class="card-body text-center">
+                        <div class="mb-2">
+                            <i class="bi bi-box-seam" style="font-size: 2.5rem; color: #007bff;"></i>
+                        </div>
+                        <h5 class="card-title fw-bold">Equipos Registrados</h5>
+                        <h1 class="display-4 fw-bold text-primary">{{ stats.equipos_registrados }}</h1>
+                        <p class="text-muted small mb-0">Total de equipos ingresados en el sistema</p>
                         <span class="stretched-link"></span>
                     </div>
                 </div>
             </a>
         </div>
         <div class="col-md-3">
-            <a href="{{ url_for('envios_list') }}" class="text-decoration-none text-dark">
-                <div class="card text-center shadow-sm position-relative">
-                    <div class="card-body">
-                        <h5 class="card-title"><i class="bi bi-truck"></i> Envíos pendientes</h5>
-                        <h2 class="text-warning">{{ stats.envios_pendientes }}</h2>
+            <a href="{{ url_for('raypac_list') }}" class="text-decoration-none">
+                <div class="card shadow-sm h-100 position-relative {% if stats.equipos_sin_remito > 0 %}border-warning{% endif %}" style="border-left: 5px solid #ffc107; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+                    <div class="card-body text-center">
+                        <div class="mb-2">
+                            <i class="bi bi-truck" style="font-size: 2.5rem; color: #ffc107;"></i>
+                        </div>
+                        <h5 class="card-title fw-bold">Sin Remito</h5>
+                        <h1 class="display-4 fw-bold text-warning">{{ stats.equipos_sin_remito }}</h1>
+                        <p class="text-muted small mb-0">Equipos pendientes de documentación</p>
                         <span class="stretched-link"></span>
                     </div>
                 </div>
             </a>
         </div>
         <div class="col-md-3">
-            <a href="{{ url_for('dml_list') }}" class="text-decoration-none text-dark">
-                <div class="card text-center shadow-sm position-relative">
-                    <div class="card-body">
-                        <h5 class="card-title"><i class="bi bi-clock-history"></i> Espera repuestos</h5>
-                        <h2 class="text-info">{{ stats.fichas_espera_repuestos }}</h2>
+            <a href="{{ url_for('envios_list') }}" class="text-decoration-none">
+                <div class="card shadow-sm h-100 position-relative {% if stats.envios_pendientes > 0 %}border-info{% endif %}" style="border-left: 5px solid #17a2b8; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+                    <div class="card-body text-center">
+                        <div class="mb-2">
+                            <i class="bi bi-send" style="font-size: 2.5rem; color: #17a2b8;"></i>
+                        </div>
+                        <h5 class="card-title fw-bold">Envíos Pendientes</h5>
+                        <h1 class="display-4 fw-bold text-info">{{ stats.envios_pendientes }}</h1>
+                        <p class="text-muted small mb-0">Repuestos listos para enviar a DML</p>
                         <span class="stretched-link"></span>
                     </div>
                 </div>
             </a>
         </div>
         <div class="col-md-3">
-            <a href="{{ url_for('tickets_list') }}" class="text-decoration-none text-dark">
-                <div class="card text-center shadow-sm position-relative">
-                    <div class="card-body">
-                        <h5 class="card-title"><i class="bi bi-ticket-detailed"></i> Tickets activos</h5>
-                        <h2 class="text-primary">{{ stats.tickets_activos }}</h2>
+            <a href="{{ url_for('stock_list') }}" class="text-decoration-none">
+                <div class="card shadow-sm h-100 position-relative {% if stats.stock_bajo > 0 %}border-danger{% endif %}" style="border-left: 5px solid #dc3545; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+                    <div class="card-body text-center">
+                        <div class="mb-2">
+                            <i class="bi bi-exclamation-triangle" style="font-size: 2.5rem; color: #dc3545;"></i>
+                        </div>
+                        <h5 class="card-title fw-bold">Stock RAYPAC ≤2</h5>
+                        <h1 class="display-4 fw-bold text-danger">{{ stats.stock_bajo }}</h1>
+                        <p class="text-muted small mb-0">Repuestos con inventario crítico</p>
                         <span class="stretched-link"></span>
                     </div>
                 </div>
@@ -145,46 +77,72 @@
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-md-6">
-            <div class="card shadow-sm">
-                <div class="card-header bg-info text-white">
-                    <h5 class="mb-0">Acciones Rápidas</h5>
-                </div>
-                <div class="card-body">
-                    <div class="list-group">
-                        <a href="{{ url_for('stock_list') }}" class="list-group-item list-group-item-action"><i class="bi bi-bag-check"></i> Stock DML</a>
-                        <a href="{{ url_for('stock_new') }}" class="list-group-item list-group-item-action"><i class="bi bi-plus-circle"></i> Ingresar repuesto</a>
-                        <a href="{{ url_for('estadisticas') }}" class="list-group-item list-group-item-action"><i class="bi bi-graph-up"></i> Estadísticas de repuestos</a>
-                        <a href="{{ url_for('envios_list') }}" class="list-group-item list-group-item-action"><i class="bi bi-truck"></i> Recepcionar envíos</a>
-                        <a href="{{ url_for('dml_list') }}" class="list-group-item list-group-item-action"><i class="bi bi-wrench"></i> Fichas ST</a>
-                        <a href="{{ url_for('tickets_list') }}" class="list-group-item list-group-item-action"><i class="bi bi-ticket-detailed"></i> Tickets</a>
+    {% elif role == 'DML_REPUESTOS' %}
+    <div class="alert alert-info mb-4">
+        <i class="bi bi-info-circle"></i> <strong>Dashboard Repuestos:</strong> Control de inventario DML y gestión de tickets de reparación.
+    </div>
+    
+    <h4 class="mb-3"><i class="bi bi-bag-check-fill"></i> Control de Inventario</h4>
+    <div class="row mb-4 g-3">
+        <div class="col-md-3">
+            <a href="{{ url_for('stock_list') }}" class="text-decoration-none">
+                <div class="card shadow-sm h-100 position-relative {% if stats.stock_bajo > 0 %}border-danger{% endif %}" style="border-left: 5px solid #dc3545; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+                    <div class="card-body text-center">
+                        <div class="mb-2">
+                            <i class="bi bi-exclamation-triangle" style="font-size: 2.5rem; color: #dc3545;"></i>
+                        </div>
+                        <h5 class="card-title fw-bold">Stock DML ≤2</h5>
+                        <h1 class="display-4 fw-bold text-danger">{{ stats.stock_bajo }}</h1>
+                        <p class="text-muted small mb-0">Repuestos con inventario crítico</p>
+                        <span class="stretched-link"></span>
                     </div>
                 </div>
-            </div>
+            </a>
         </div>
-        <div class="col-md-6">
-            <div class="card shadow-sm">
-                <div class="card-header bg-light d-flex align-items-center">
-                    <h5 class="mb-0">Notificaciones</h5>
-                </div>
-                <div class="card-body p-0">
-                    <div class="list-group list-group-flush">
-                        <div class="list-group-item d-flex justify-content-between align-items-center">
-                            <span><i class="bi bi-truck"></i> Envíos pendientes a recibir</span>
-                            <span class="badge bg-warning text-dark">{{ stats.envios_pendientes }}</span>
+        <div class="col-md-3">
+            <a href="{{ url_for('envios_list') }}" class="text-decoration-none">
+                <div class="card shadow-sm h-100 position-relative {% if stats.envios_pendientes > 0 %}border-warning{% endif %}" style="border-left: 5px solid #ffc107; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+                    <div class="card-body text-center">
+                        <div class="mb-2">
+                            <i class="bi bi-truck" style="font-size: 2.5rem; color: #ffc107;"></i>
                         </div>
-                        <div class="list-group-item d-flex justify-content-between align-items-center">
-                            <span><i class="bi bi-exclamation-triangle"></i> Repuestos DML en alerta (≤2)</span>
-                            <span class="badge bg-danger">{{ stats.stock_bajo }}</span>
-                        </div>
-                        <div class="list-group-item d-flex justify-content-between align-items-center">
-                            <span><i class="bi bi-clock-history"></i> Fichas esperando repuestos</span>
-                            <span class="badge bg-info text-dark">{{ stats.fichas_espera_repuestos }}</span>
-                        </div>
+                        <h5 class="card-title fw-bold">Envíos Pendientes</h5>
+                        <h1 class="display-4 fw-bold text-warning">{{ stats.envios_pendientes }}</h1>
+                        <p class="text-muted small mb-0">Envíos de RAYPAC por recepcionar</p>
+                        <span class="stretched-link"></span>
                     </div>
                 </div>
-            </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="{{ url_for('dml_list') }}" class="text-decoration-none">
+                <div class="card shadow-sm h-100 position-relative {% if stats.fichas_espera_repuestos > 0 %}border-info{% endif %}" style="border-left: 5px solid #17a2b8; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+                    <div class="card-body text-center">
+                        <div class="mb-2">
+                            <i class="bi bi-clock-history" style="font-size: 2.5rem; color: #17a2b8;"></i>
+                        </div>
+                        <h5 class="card-title fw-bold">Espera Repuestos</h5>
+                        <h1 class="display-4 fw-bold text-info">{{ stats.fichas_espera_repuestos }}</h1>
+                        <p class="text-muted small mb-0">Fichas bloqueadas por falta de stock</p>
+                        <span class="stretched-link"></span>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="{{ url_for('tickets_list') }}" class="text-decoration-none">
+                <div class="card shadow-sm h-100 position-relative" style="border-left: 5px solid #007bff; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+                    <div class="card-body text-center">
+                        <div class="mb-2">
+                            <i class="bi bi-ticket-detailed" style="font-size: 2.5rem; color: #007bff;"></i>
+                        </div>
+                        <h5 class="card-title fw-bold">Tickets Activos</h5>
+                        <h1 class="display-4 fw-bold text-primary">{{ stats.tickets_activos }}</h1>
+                        <p class="text-muted small mb-0">Tickets en seguimiento</p>
+                        <span class="stretched-link"></span>
+                    </div>
+                </div>
+            </a>
         </div>
     </div>
 
@@ -313,98 +271,71 @@
     </div>
 
     {% else %} {# ADMIN #}
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <a href="{{ url_for('raypac_list') }}" class="text-decoration-none text-dark">
-                <div class="card text-center shadow-sm position-relative">
-                    <div class="card-body">
-                        <h5 class="card-title"><i class="bi bi-box-seam"></i> Equipos RAYPAC</h5>
-                        <h2 class="text-primary">{{ stats.equipos_raypac }}</h2>
-                        <span class="stretched-link"></span>
-                    </div>
-                </div>
-            </a>
-        </div>
-        <div class="col-md-3">
-            <a href="{{ url_for('dml_list') }}" class="text-decoration-none text-dark">
-                <div class="card text-center shadow-sm position-relative">
-                    <div class="card-body">
-                        <h5 class="card-title"><i class="bi bi-wrench"></i> Fichas abiertas</h5>
-                        <h2 class="text-warning">{{ stats.fichas_abiertas }}</h2>
-                        <span class="stretched-link"></span>
-                    </div>
-                </div>
-            </a>
-        </div>
-        <div class="col-md-3">
-            <a href="{{ url_for('envios_list') }}" class="text-decoration-none text-dark">
-                <div class="card text-center shadow-sm position-relative">
-                    <div class="card-body">
-                        <h5 class="card-title"><i class="bi bi-truck"></i> Envíos pendientes</h5>
-                        <h2 class="text-info">{{ stats.envios_pendientes }}</h2>
-                        <span class="stretched-link"></span>
-                    </div>
-                </div>
-            </a>
-        </div>
-        <div class="col-md-3">
-            <a href="{{ url_for('stock_list') }}" class="text-decoration-none text-dark">
-                <div class="card text-center shadow-sm position-relative">
-                    <div class="card-body">
-                        <h5 class="card-title"><i class="bi bi-exclamation-triangle"></i> Stock ≤2 (todas ubic.)</h5>
-                        <h2 class="text-danger">{{ stats.stock_bajo_total }}</h2>
-                        <span class="stretched-link"></span>
-                    </div>
-                </div>
-            </a>
-        </div>
+    <div class="alert alert-info mb-4">
+        <i class="bi bi-info-circle"></i> <strong>Dashboard Administrador:</strong> Vista completa del sistema con acceso a todas las secciones y estadísticas.
     </div>
-
-    <div class="row">
-        <div class="col-md-6">
-            <div class="card shadow-sm">
-                <div class="card-header bg-info text-white">
-                    <h5 class="mb-0">Acciones Rápidas</h5>
-                </div>
-                <div class="card-body">
-                    <div class="list-group">
-                        <a href="{{ url_for('raypac_new') }}" class="list-group-item list-group-item-action"><i class="bi bi-plus-circle"></i> Nuevo ingreso RAYPAC</a>
-                        <a href="{{ url_for('raypac_list') }}" class="list-group-item list-group-item-action"><i class="bi bi-box-seam"></i> Ver ingresos RAYPAC</a>
-                        <a href="{{ url_for('dml_list') }}" class="list-group-item list-group-item-action"><i class="bi bi-wrench"></i> Fichas ST</a>
-                        <a href="{{ url_for('envios_list') }}" class="list-group-item list-group-item-action"><i class="bi bi-truck"></i> Envíos</a>
-                        <a href="{{ url_for('stock_list') }}" class="list-group-item list-group-item-action"><i class="bi bi-bag-check"></i> Stock</a>
-                        <a href="{{ url_for('usuarios_list') }}" class="list-group-item list-group-item-action"><i class="bi bi-people"></i> Usuarios</a>
-                        <a href="{{ url_for('estadisticas') }}" class="list-group-item list-group-item-action"><i class="bi bi-bar-chart"></i> Estadísticas</a>
+    
+    <h4 class="mb-3"><i class="bi bi-speedometer2"></i> Estado General del Sistema</h4>
+    <div class="row mb-4 g-3">
+        <div class="col-md-3">
+            <a href="{{ url_for('raypac_list') }}" class="text-decoration-none">
+                <div class="card shadow-sm h-100 position-relative" style="border-left: 5px solid #007bff; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+                    <div class="card-body text-center">
+                        <div class="mb-2">
+                            <i class="bi bi-box-seam" style="font-size: 2.5rem; color: #007bff;"></i>
+                        </div>
+                        <h5 class="card-title fw-bold">Equipos RAYPAC</h5>
+                        <h1 class="display-4 fw-bold text-primary">{{ stats.equipos_raypac }}</h1>
+                        <p class="text-muted small mb-0">Total de ingresos desde casa matriz</p>
+                        <span class="stretched-link"></span>
                     </div>
                 </div>
-            </div>
+            </a>
         </div>
-        <div class="col-md-6">
-            <div class="card shadow-sm">
-                <div class="card-header bg-light d-flex align-items-center">
-                    <h5 class="mb-0">Notificaciones</h5>
-                </div>
-                <div class="card-body p-0">
-                    <div class="list-group list-group-flush">
-                        <div class="list-group-item d-flex justify-content-between align-items-center">
-                            <span><i class="bi bi-box-seam"></i> Equipos RAYPAC cargados</span>
-                            <span class="badge bg-primary">{{ stats.equipos_raypac }}</span>
+        <div class="col-md-3">
+            <a href="{{ url_for('dml_list') }}" class="text-decoration-none">
+                <div class="card shadow-sm h-100 position-relative {% if stats.fichas_abiertas > 0 %}border-warning{% endif %}" style="border-left: 5px solid #ffc107; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+                    <div class="card-body text-center">
+                        <div class="mb-2">
+                            <i class="bi bi-wrench" style="font-size: 2.5rem; color: #ffc107;"></i>
                         </div>
-                        <div class="list-group-item d-flex justify-content-between align-items-center">
-                            <span><i class="bi bi-wrench"></i> Fichas abiertas</span>
-                            <span class="badge bg-warning text-dark">{{ stats.fichas_abiertas }}</span>
-                        </div>
-                        <div class="list-group-item d-flex justify-content-between align-items-center">
-                            <span><i class="bi bi-truck"></i> Envíos pendientes</span>
-                            <span class="badge bg-info text-dark">{{ stats.envios_pendientes }}</span>
-                        </div>
-                        <div class="list-group-item d-flex justify-content-between align-items-center">
-                            <span><i class="bi bi-exclamation-triangle"></i> Stock ≤2 (todas ubic.)</span>
-                            <span class="badge bg-danger">{{ stats.stock_bajo_total }}</span>
-                        </div>
+                        <h5 class="card-title fw-bold">Fichas Abiertas</h5>
+                        <h1 class="display-4 fw-bold text-warning">{{ stats.fichas_abiertas }}</h1>
+                        <p class="text-muted small mb-0">Reparaciones en curso sin cerrar</p>
+                        <span class="stretched-link"></span>
                     </div>
                 </div>
-            </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="{{ url_for('envios_list') }}" class="text-decoration-none">
+                <div class="card shadow-sm h-100 position-relative {% if stats.envios_pendientes > 0 %}border-info{% endif %}" style="border-left: 5px solid #17a2b8; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+                    <div class="card-body text-center">
+                        <div class="mb-2">
+                            <i class="bi bi-truck" style="font-size: 2.5rem; color: #17a2b8;"></i>
+                        </div>
+                        <h5 class="card-title fw-bold">Envíos Pendientes</h5>
+                        <h1 class="display-4 fw-bold text-info">{{ stats.envios_pendientes }}</h1>
+                        <p class="text-muted small mb-0">Transferencias entre ubicaciones</p>
+                        <span class="stretched-link"></span>
+                    </div>
+                </div>
+            </a>
+        </div>
+        <div class="col-md-3">
+            <a href="{{ url_for('stock_list') }}" class="text-decoration-none">
+                <div class="card shadow-sm h-100 position-relative {% if stats.stock_bajo_total > 0 %}border-danger{% endif %}" style="border-left: 5px solid #dc3545; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-5px)'" onmouseout="this.style.transform='translateY(0)'">
+                    <div class="card-body text-center">
+                        <div class="mb-2">
+                            <i class="bi bi-exclamation-triangle" style="font-size: 2.5rem; color: #dc3545;"></i>
+                        </div>
+                        <h5 class="card-title fw-bold">Stock Crítico ≤2</h5>
+                        <h1 class="display-4 fw-bold text-danger">{{ stats.stock_bajo_total }}</h1>
+                        <p class="text-muted small mb-0">Repuestos en todas las ubicaciones</p>
+                        <span class="stretched-link"></span>
+                    </div>
+                </div>
+            </a>
         </div>
     </div>
     {% endif %}
