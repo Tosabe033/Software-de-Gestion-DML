@@ -296,21 +296,15 @@ def migrate_db():
             db.execute("ALTER TABLE tickets ADD COLUMN observaciones TEXT")
             print("[MIGRATION] ✅ Columna observaciones agregada a tickets")
         
-        if 'estado_fisico' not in tickets_cols:
-            db.execute("ALTER TABLE tickets ADD COLUMN estado_fisico TEXT")
-            print("[MIGRATION] ✅ Columna estado_fisico agregada a tickets")
+        # Componentes del estado del equipo
+        componentes = ['estado_equipo', 'carcaza', 'cubre_feedwheel', 'mango', 'botones', 
+                      'motor_arrastre', 'motor_sellado', 'cuchilla', 'servo', 
+                      'rueda_arrastre', 'resorte_manija', 'otros']
         
-        if 'nivel_suciedad' not in tickets_cols:
-            db.execute("ALTER TABLE tickets ADD COLUMN nivel_suciedad TEXT")
-            print("[MIGRATION] ✅ Columna nivel_suciedad agregada a tickets")
-        
-        if 'falla_reportada' not in tickets_cols:
-            db.execute("ALTER TABLE tickets ADD COLUMN falla_reportada TEXT")
-            print("[MIGRATION] ✅ Columna falla_reportada agregada a tickets")
-        
-        if 'diagnostico_preliminar' not in tickets_cols:
-            db.execute("ALTER TABLE tickets ADD COLUMN diagnostico_preliminar TEXT")
-            print("[MIGRATION] ✅ Columna diagnostico_preliminar agregada a tickets")
+        for componente in componentes:
+            if componente not in tickets_cols:
+                db.execute(f"ALTER TABLE tickets ADD COLUMN {componente} TEXT DEFAULT 'BUENO'")
+                print(f"[MIGRATION] ✅ Columna {componente} agregada a tickets")
         
         # FIX CRÍTICO: En SQLite no se puede modificar constraint NOT NULL directamente
         # Necesitamos recrear la tabla si ficha_id es NOT NULL
@@ -1656,10 +1650,20 @@ def ticket_nuevo(raypac_id):
             fecha_ingreso = request.form.get("fecha_ingreso") or raypac['fecha_recepcion']
             tecnico_responsable = request.form.get("tecnico_responsable", "").strip()
             observaciones = request.form.get("observaciones", "").strip()
-            estado_fisico = request.form.get("estado_fisico", "")
-            nivel_suciedad = request.form.get("nivel_suciedad", "")
-            falla_reportada = request.form.get("falla_reportada", "").strip()
-            diagnostico_preliminar = request.form.get("diagnostico_preliminar", "").strip()
+            
+            # Componentes del estado del equipo
+            estado_equipo = request.form.get("estado_equipo", "BUENO")
+            carcaza = request.form.get("carcaza", "BUENO")
+            cubre_feedwheel = request.form.get("cubre_feedwheel", "BUENO")
+            mango = request.form.get("mango", "BUENO")
+            botones = request.form.get("botones", "BUENO")
+            motor_arrastre = request.form.get("motor_arrastre", "BUENO")
+            motor_sellado = request.form.get("motor_sellado", "BUENO")
+            cuchilla = request.form.get("cuchilla", "BUENO")
+            servo = request.form.get("servo", "BUENO")
+            rueda_arrastre = request.form.get("rueda_arrastre", "BUENO")
+            resorte_manija = request.form.get("resorte_manija", "BUENO")
+            otros = request.form.get("otros", "BUENO")
             
             # Validación
             if not tecnico_responsable:
@@ -1673,12 +1677,16 @@ def ticket_nuevo(raypac_id):
             db.execute("""
                 INSERT INTO tickets 
                 (numero_ticket, raypac_id, numero_serie, estado, ficha_id,
-                 fecha_ingreso, tecnico_responsable, observaciones, 
-                 estado_fisico, nivel_suciedad, falla_reportada, diagnostico_preliminar)
-                VALUES (?, ?, ?, 'ACTIVO', NULL, ?, ?, ?, ?, ?, ?, ?)
+                 fecha_ingreso, tecnico_responsable, observaciones,
+                 estado_equipo, carcaza, cubre_feedwheel, mango, botones,
+                 motor_arrastre, motor_sellado, cuchilla, servo,
+                 rueda_arrastre, resorte_manija, otros)
+                VALUES (?, ?, ?, 'ACTIVO', NULL, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (numero_ticket, raypac_id, raypac['numero_serie'], 
                   fecha_ingreso, tecnico_responsable, observaciones,
-                  estado_fisico, nivel_suciedad, falla_reportada, diagnostico_preliminar))
+                  estado_equipo, carcaza, cubre_feedwheel, mango, botones,
+                  motor_arrastre, motor_sellado, cuchilla, servo,
+                  rueda_arrastre, resorte_manija, otros))
             
             db.commit()
             

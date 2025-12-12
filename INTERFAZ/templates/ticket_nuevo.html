@@ -84,37 +84,140 @@
                         
                         <div class="row">
                             <div class="col-md-6 mb-3">
-                                <label for="estado_fisico" class="form-label">Estado Físico</label>
-                                <select class="form-select" id="estado_fisico" name="estado_fisico">
-                                    <option value="">Seleccionar...</option>
-                                    <option value="BUENO">Bueno</option>
-                                    <option value="REGULAR">Regular</option>
-                                    <option value="MALO">Malo</option>
-                                    <option value="MUY_MALO">Muy Malo</option>
+                                <label class="form-label">Estado del Equipo</label>
+                                <select class="form-select" name="estado_equipo">
+                                    <option value="BUENO" selected>BUENO</option>
+                                    <option value="OK">OK</option>
+                                    <option value="A PROBAR">A PROBAR</option>
+                                    <option value="ROTO">ROTO</option>
+                                    <option value="DESGASTADA">DESGASTADA</option>
                                 </select>
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="nivel_suciedad" class="form-label">Nivel de Suciedad</label>
-                                <select class="form-select" id="nivel_suciedad" name="nivel_suciedad">
-                                    <option value="">Seleccionar...</option>
-                                    <option value="LIMPIO">Limpio</option>
-                                    <option value="POCO">Poco Sucio</option>
-                                    <option value="MODERADO">Moderadamente Sucio</option>
-                                    <option value="MUY_SUCIO">Muy Sucio</option>
+                                <label class="form-label">Carcaza</label>
+                                <select class="form-select" name="carcaza">
+                                    <option value="BUENO" selected>BUENO</option>
+                                    <option value="OK">OK</option>
+                                    <option value="A PROBAR">A PROBAR</option>
+                                    <option value="ROTO">ROTO</option>
+                                    <option value="DESGASTADA">DESGASTADA</option>
                                 </select>
                             </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="falla_reportada" class="form-label">Falla Reportada por Cliente</label>
-                            <textarea class="form-control" id="falla_reportada" name="falla_reportada" 
-                                      rows="2" placeholder="Descripción de la falla según el cliente"></textarea>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Cubre Feedwheel</label>
+                                <select class="form-select" name="cubre_feedwheel">
+                                    <option value="BUENO" selected>BUENO</option>
+                                    <option value="OK">OK</option>
+                                    <option value="A PROBAR">A PROBAR</option>
+                                    <option value="ROTO">ROTO</option>
+                                    <option value="FALTANTE">FALTANTE</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Mango</label>
+                                <select class="form-select" name="mango">
+                                    <option value="BUENO" selected>BUENO</option>
+                                    <option value="OK">OK</option>
+                                    <option value="A PROBAR">A PROBAR</option>
+                                    <option value="ROTO">ROTO</option>
+                                    <option value="FALTANTE">FALTANTE</option>
+                                </select>
+                            </div>
                         </div>
 
-                        <div class="mb-3">
-                            <label for="diagnostico_preliminar" class="form-label">Diagnóstico Preliminar</label>
-                            <textarea class="form-control" id="diagnostico_preliminar" name="diagnostico_preliminar" 
-                                      rows="2" placeholder="Diagnóstico inicial del técnico"></textarea>
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Botones</label>
+                                <select class="form-select" name="botones">
+                                    <option value="BUENO" selected>BUENO</option>
+                                    <option value="OK">OK</option>
+                                    <option value="A PROBAR">A PROBAR</option>
+                                    <option value="ROTO">ROTO</option>
+                                    <option value="FALTANTE">FALTANTE</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Motor de Arrastre</label>
+                                <select class="form-select" name="motor_arrastre">
+                                    <option value="BUENO" selected>BUENO</option>
+                                    <option value="OK">OK</option>
+                                    <option value="A PROBAR">A PROBAR</option>
+                                    <option value="ROTO">ROTO</option>
+                                    <option value="FALTANTE">FALTANTE</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Motor de Sellado</label>
+                                <select class="form-select" name="motor_sellado">
+                                    <option value="BUENO" selected>BUENO</option>
+                                    <option value="OK">OK</option>
+                                    <option value="A PROBAR">A PROBAR</option>
+                                    <option value="ROTO">ROTO</option>
+                                    <option value="FALTANTE">FALTANTE</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Cuchilla</label>
+                                <select class="form-select" name="cuchilla">
+                                    <option value="BUENO" selected>BUENO</option>
+                                    <option value="OK">OK</option>
+                                    <option value="A PROBAR">A PROBAR</option>
+                                    <option value="ROTO">ROTO</option>
+                                    <option value="DESGASTADA">DESGASTADA</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Servo</label>
+                                <select class="form-select" name="servo">
+                                    <option value="BUENO" selected>BUENO</option>
+                                    <option value="OK">OK</option>
+                                    <option value="A PROBAR">A PROBAR</option>
+                                    <option value="ROTO">ROTO</option>
+                                    <option value="FALTANTE">FALTANTE</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Rueda de Arrastre</label>
+                                <select class="form-select" name="rueda_arrastre">
+                                    <option value="BUENO" selected>BUENO</option>
+                                    <option value="OK">OK</option>
+                                    <option value="A PROBAR">A PROBAR</option>
+                                    <option value="ROTO">ROTO</option>
+                                    <option value="DESGASTADA">DESGASTADA</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Resorte de Manija</label>
+                                <select class="form-select" name="resorte_manija">
+                                    <option value="BUENO" selected>BUENO</option>
+                                    <option value="OK">OK</option>
+                                    <option value="A PROBAR">A PROBAR</option>
+                                    <option value="ROTO">ROTO</option>
+                                    <option value="FALTANTE">FALTANTE</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label class="form-label">Otros</label>
+                                <select class="form-select" name="otros">
+                                    <option value="BUENO" selected>BUENO</option>
+                                    <option value="OK">OK</option>
+                                    <option value="A PROBAR">A PROBAR</option>
+                                    <option value="ROTO">ROTO</option>
+                                    <option value="FALTANTE">FALTANTE</option>
+                                </select>
+                            </div>
                         </div>
                     </div>
                 </div>
