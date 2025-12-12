@@ -55,12 +55,20 @@
                     <td><strong>{{ ticket.numero_ticket }}</strong></td>
                     <td>{{ ticket.numero_serie }}</td>
                     <td>
+                        {% if ticket.numero_ficha %}
                         <a href="{{ url_for('dml_view', id=ticket.ficha_id) }}">
-                            #{{ ticket.numero_ficha }}
+                            #{{ '%07d' % ticket.numero_ficha }}
                         </a>
+                        {% else %}
+                        <span class="badge bg-warning text-dark">Pendiente</span>
+                        {% endif %}
                     </td>
                     <td>
+                        {% if ticket.estado_reparacion %}
                         <span class="badge bg-info">{{ ticket.estado_reparacion }}</span>
+                        {% else %}
+                        <span class="text-muted">Sin ficha</span>
+                        {% endif %}
                     </td>
                     <td>{{ ticket.fecha_creacion[:10] }}</td>
                     <td>
