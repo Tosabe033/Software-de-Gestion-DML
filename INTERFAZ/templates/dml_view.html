@@ -223,9 +223,11 @@
         </div>
     </div>
 
-    <!-- DIAGNÓSTICO DEL DEPARTAMENTO TÉCNICO -->
-    <div class="section-title">DIAGNOSTICO DEL DEPARTAMENTO TECNICO</div>
-    <div class="large-text-box">{{ ficha.diagnostico_inicial or '' }}</div>
+    <!-- DIAGNÓSTICO DE INGRESO (DE RAYPAC) -->
+    {% if raypac and raypac.diagnostico_ingreso %}
+    <div class="section-title">DIAGNOSTICO DE INGRESO (RAYPAC)</div>
+    <div class="large-text-box">{{ raypac.diagnostico_ingreso }}</div>
+    {% endif %}
 
     <!-- OBSERVACIONES -->
     <div class="section-title">OBSERVACIONES</div>

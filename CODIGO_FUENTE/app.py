@@ -1343,7 +1343,7 @@ def dml_new(raypac_id):
         try:
             fecha_ingreso = request.form.get("fecha_ingreso") or datetime.now().strftime("%Y-%m-%d")
             tecnico = request.form.get("tecnico")
-            diagnostico = request.form.get("diagnostico_inicial")
+            # CAMBIO DAVID: No usar diagnostico_inicial, ya viene de RAYPAC (diagnostico_ingreso)
             observaciones = request.form.get("observaciones")
             n_ciclos = request.form.get("n_ciclos") or 0
             tecnico_resp = request.form.get("tecnico_resp")
@@ -1357,11 +1357,11 @@ def dml_new(raypac_id):
             db.execute("""
                 INSERT INTO dml_fichas 
                 (numero_ficha, raypac_id, fecha_ingreso, tecnico,
-                 diagnostico_inicial, observaciones, n_ciclos, tecnico_resp,
+                 observaciones, n_ciclos, tecnico_resp,
                  estado_reparacion)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             """, (numero_ficha, raypac_id, fecha_ingreso, tecnico,
-                  diagnostico, observaciones, n_ciclos, tecnico_resp, 'A LA ESPERA DE REVISIÓN'))
+                  observaciones, n_ciclos, tecnico_resp, 'A LA ESPERA DE REVISIÓN'))
             db.commit()
             
             ficha_id = db.execute("SELECT last_insert_rowid() as id").fetchone()['id']
@@ -1455,7 +1455,7 @@ def dml_edit(id):
             fecha_egreso = request.form.get("fecha_egreso")
             
             estado = request.form.get("estado_reparacion")
-            diagnostico = request.form.get("diagnostico_inicial")
+            # CAMBIO DAVID: No usar diagnostico_inicial, ya viene de RAYPAC
             diagnostico_rep = request.form.get("diagnostico_reparacion")
             observaciones = request.form.get("observaciones")
             n_ciclos = request.form.get("n_ciclos")
@@ -1489,12 +1489,12 @@ def dml_edit(id):
             db.execute("""
                 UPDATE dml_fichas 
                 SET fecha_ingreso=?, fecha_egreso=?,
-                    estado_reparacion=?, diagnostico_inicial=?, diagnostico_reparacion=?, observaciones=?,
+                    estado_reparacion=?, diagnostico_reparacion=?, observaciones=?,
                     n_ciclos=?, mecanizado_adic=?, horas_adic=?, numero_remito_salida=?,
                     tecnico_resp=?, updated_at=CURRENT_TIMESTAMP
                 WHERE id = ?
             """, (fecha_ingreso, fecha_egreso,
-                  estado, diagnostico, diagnostico_rep, observaciones,
+                  estado, diagnostico_rep, observaciones,
                   n_ciclos, mecanizado, horas, numero_remito,
                   tecnico_resp, id))
             db.commit()
