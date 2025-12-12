@@ -2357,7 +2357,15 @@ def tickets_list():
     estado = request.args.get("estado", "")
     mostrar_cerrados = request.args.get("cerrados", "0") == "1"  # Por defecto no mostrar cerrados
     
-    query = "SELECT t.*, f.numero_ficha, f.estado_reparacion FROM tickets t JOIN dml_fichas f ON t.ficha_id = f.id WHERE 1=1"
+    # LEFT JOIN porque tickets pueden existir sin ficha aún
+    query = """
+        SELECT t.*, f.numero_ficha, f.estado_reparacion,
+               r.cliente, r.modelo_maquina, r.comercial
+        FROM tickets t 
+        LEFT JOIN dml_fichas f ON t.ficha_id = f.id
+        LEFT JOIN raypac_entries r ON t.raypac_id = r.id
+        WHERE 1=1
+    """
     params = []
     
     # Por defecto, solo mostrar tickets activos (no cerrados)
@@ -2383,10 +2391,14 @@ def ticket_view(numero_ticket):
     """Vista pública del seguimiento de un ticket (sin login requerido)."""
     db = get_db()
     
+    # LEFT JOIN porque el ticket puede existir sin ficha aún (nuevo flujo)
     ticket = db.execute("""
-        SELECT t.*, f.numero_ficha, f.estado_reparacion, f.diagnostico_inicial, f.diagnostico_reparacion
+        SELECT t.*, 
+               f.numero_ficha, f.estado_reparacion, f.diagnostico_inicial, f.diagnostico_reparacion,
+               r.cliente, r.numero_serie, r.modelo_maquina, r.comercial
         FROM tickets t
-        JOIN dml_fichas f ON t.ficha_id = f.id
+        LEFT JOIN dml_fichas f ON t.ficha_id = f.id
+        LEFT JOIN raypac_entries r ON t.raypac_id = r.id
         WHERE t.numero_ticket = ?
     """, (numero_ticket,)).fetchone()
     
@@ -2407,11 +2419,13 @@ def ticket_print(numero_ticket):
     from datetime import datetime
     db = get_db()
     
+    # LEFT JOIN porque el ticket puede existir sin ficha (nuevo flujo)
     ticket = db.execute("""
-        SELECT t.*, f.numero_ficha, f.estado_reparacion, r.numero_serie, r.cliente, r.comercial
+        SELECT t.*, f.numero_ficha, f.estado_reparacion, 
+               r.numero_serie, r.cliente, r.comercial, r.modelo_maquina
         FROM tickets t
-        JOIN dml_fichas f ON t.ficha_id = f.id
-        LEFT JOIN raypac_entries r ON f.raypac_id = r.id
+        LEFT JOIN dml_fichas f ON t.ficha_id = f.id
+        LEFT JOIN raypac_entries r ON t.raypac_id = r.id
         WHERE t.numero_ticket = ?
     """, (numero_ticket,)).fetchone()
     

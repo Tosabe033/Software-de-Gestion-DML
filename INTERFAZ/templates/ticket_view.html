@@ -52,14 +52,31 @@
                     
                     <div class="row mt-3">
                         <div class="col-md-4">
+                            <p><strong>Cliente:</strong></p>
+                            <p style="font-size: 18px; font-weight: bold; color: #2c3e50;">{{ ticket.cliente or 'N/A' }}</p>
+                        </div>
+                        <div class="col-md-4">
                             <p><strong>Número de Serie:</strong></p>
                             <p style="font-size: 18px; font-weight: bold; color: #2c3e50;">{{ ticket.numero_serie }}</p>
                         </div>
                         <div class="col-md-4">
-                            <p><strong>Ficha DML:</strong></p>
-                            <p style="font-size: 18px; font-weight: bold; color: #2c3e50;">#{{ ticket.numero_ficha }}</p>
+                            <p><strong>Modelo:</strong></p>
+                            <p style="font-size: 18px; font-weight: bold; color: #2c3e50;">{{ ticket.modelo_maquina or 'N/A' }}</p>
                         </div>
-                        <div class="col-md-4">
+                    </div>
+                    
+                    <div class="row mt-2">
+                        <div class="col-md-6">
+                            <p><strong>Ficha DML:</strong></p>
+                            <p style="font-size: 18px; font-weight: bold; color: #2c3e50;">
+                                {% if ticket.numero_ficha %}
+                                    #{{ '%07d' % ticket.numero_ficha }}
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">Pendiente de creación</span>
+                                {% endif %}
+                            </p>
+                        </div>
+                        <div class="col-md-6">
                             <p><strong>Estado Actual:</strong></p>
                             <p style="font-size: 18px;">
                                 {% if ticket.estado == 'ACTIVO' %}
@@ -74,6 +91,7 @@
             </div>
 
             <!-- INFORMACIÓN DE REPARACIÓN -->
+            {% if ticket.numero_ficha %}
             <div class="row mb-4">
                 <div class="col-md-6">
                     <div class="card">
