@@ -1058,12 +1058,21 @@ def index():
             "tickets_activos": count("SELECT COUNT(*) AS total FROM tickets WHERE estado != 'CERRADO'")
         }
     elif role == "DML_ST":
+        # Equipos freezados en RAYPAC (con remito) sin ficha DML creada = pendientes de recepción
+        equipos_pendientes = db.execute("""
+            SELECT COUNT(*) AS total 
+            FROM raypac_entries r 
+            WHERE r.is_frozen = 1 
+            AND r.numero_remito IS NOT NULL 
+            AND NOT EXISTS (SELECT 1 FROM dml_fichas f WHERE f.raypac_id = r.id)
+        """).fetchone()['total']
+        
         stats = {
             "fichas_revision_inicial": count("SELECT COUNT(*) AS total FROM dml_fichas WHERE estado_reparacion = 'A LA ESPERA DE REVISIÓN'"),
             "fichas_en_reparacion": count("SELECT COUNT(*) AS total FROM dml_fichas WHERE estado_reparacion = 'EN REPARACIÓN'"),
             "fichas_espera_repuestos": count("SELECT COUNT(*) AS total FROM dml_fichas WHERE estado_reparacion = 'A LA ESPERA DE REPUESTOS'"),
             "fichas_listas": count("SELECT COUNT(*) AS total FROM dml_fichas WHERE estado_reparacion = 'MÁQUINA LISTA PARA RETIRAR'"),
-            "stock_bajo": count("SELECT COUNT(*) AS total FROM stock_ubicaciones WHERE ubicacion = 'DML' AND cantidad <= 2"),
+            "equipos_raypac_pendientes": equipos_pendientes,
             "tickets_activos": count("SELECT COUNT(*) AS total FROM tickets WHERE estado != 'CERRADO'")
         }
     else:  # ADMIN
