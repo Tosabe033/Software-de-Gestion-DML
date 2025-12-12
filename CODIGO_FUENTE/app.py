@@ -2753,6 +2753,132 @@ def reset_database_temp():
         result += f"<br><br><pre>{trace}</pre>"
         return result, 500
 
+@app.route("/admin/cargar-stock-csv", methods=["POST", "GET"])
+def cargar_stock_desde_web():
+    """Endpoint para cargar stock desde el CSV en producción"""
+    import csv
+    import sys
+    
+    output = []
+    try:
+        # Ruta al CSV
+        csv_path = os.path.join(BASE_DIR, "DOCUMENTOS DML", "Copia de NUEVO STOCK DE REPUESTOS COMPLETO.csv")
+        output.append(f"[STOCK] Buscando CSV: {csv_path}")
+        print(f"[STOCK] Buscando CSV: {csv_path}", file=sys.stderr, flush=True)
+        
+        if not os.path.exists(csv_path):
+            output.append("[STOCK] ❌ Archivo CSV no encontrado")
+            return "<br>".join(output), 404
+        
+        output.append("[STOCK] ✅ CSV encontrado, iniciando carga...")
+        print("[STOCK] ✅ CSV encontrado", file=sys.stderr, flush=True)
+        
+        db = get_db()
+        repuestos_cargados = 0
+        repuestos_actualizados = 0
+        errores = 0
+        
+        with open(csv_path, 'r', encoding='utf-8-sig') as f:
+            reader = csv.reader(f, delimiter=';')
+            
+            # Saltar las primeras 4 filas (encabezados)
+            for _ in range(4):
+                next(reader, None)
+            
+            for idx, row in enumerate(reader, start=1):
+                if len(row) < 11:
+                    continue
+                
+                try:
+                    # Extraer datos
+                    codigo = row[2].strip() if len(row) > 2 and row[2] else None
+                    item = row[3].strip() if len(row) > 3 and row[3] else None
+                    cantidad_str = row[4].strip() if len(row) > 4 and row[4] else "0"
+                    codigo_ubicacion = row[9].strip() if len(row) > 9 and row[9] else "SIN UBICACIÓN"
+                    
+                    if not codigo or not item:
+                        continue
+                    
+                    # Limpiar y convertir cantidad
+                    cantidad_str = cantidad_str.replace(',', '')
+                    try:
+                        cantidad = int(float(cantidad_str))
+                    except:
+                        errores += 1
+                        continue
+                    
+                    if cantidad <= 0:
+                        continue
+                    
+                    # 1. Insertar o actualizar en matriz_repuestos
+                    cursor = db.execute("SELECT id FROM matriz_repuestos WHERE codigo_repuesto = ?", (codigo,))
+                    existe_matriz = cursor.fetchone()
+                    
+                    if not existe_matriz:
+                        numero_correlativo = idx
+                        db.execute("""
+                            INSERT INTO matriz_repuestos (numero, codigo_repuesto, item, cantidad_inicial, cantidad_actual, ubicacion)
+                            VALUES (?, ?, ?, ?, ?, 'DML')
+                        """, (numero_correlativo, codigo, item, cantidad, cantidad))
+                        repuestos_cargados += 1
+                    else:
+                        db.execute("""
+                            UPDATE matriz_repuestos 
+                            SET item = ?, cantidad_actual = ?
+                            WHERE codigo_repuesto = ?
+                        """, (item, cantidad, codigo))
+                        repuestos_actualizados += 1
+                    
+                    # 2. Insertar o actualizar en stock_ubicaciones (DML)
+                    cursor = db.execute("""
+                        SELECT id FROM stock_ubicaciones 
+                        WHERE codigo_repuesto = ? AND ubicacion = 'DML'
+                    """, (codigo,))
+                    
+                    existe_stock = cursor.fetchone()
+                    
+                    if not existe_stock:
+                        db.execute("""
+                            INSERT INTO stock_ubicaciones (codigo_repuesto, ubicacion, cantidad, codigo_ubicacion_fisica)
+                            VALUES (?, 'DML', ?, ?)
+                        """, (codigo, cantidad, codigo_ubicacion))
+                    else:
+                        db.execute("""
+                            UPDATE stock_ubicaciones 
+                            SET cantidad = ?, codigo_ubicacion_fisica = ?, updated_at = CURRENT_TIMESTAMP
+                            WHERE codigo_repuesto = ? AND ubicacion = 'DML'
+                        """, (cantidad, codigo_ubicacion, codigo))
+                    
+                except Exception as e:
+                    errores += 1
+                    continue
+        
+        db.commit()
+        
+        output.append(f"[STOCK] ✅ Carga completada!")
+        output.append(f"[STOCK] 📦 Repuestos nuevos: {repuestos_cargados}")
+        output.append(f"[STOCK] 🔄 Repuestos actualizados: {repuestos_actualizados}")
+        output.append(f"[STOCK] ⚠️ Errores: {errores}")
+        
+        print(f"[STOCK] Nuevos: {repuestos_cargados}, Actualizados: {repuestos_actualizados}, Errores: {errores}", 
+              file=sys.stderr, flush=True)
+        
+        result = "<br>".join(output)
+        result += "<br><br><a href='/stock'>Ver Stock Cargado</a>"
+        return result, 200
+        
+    except Exception as e:
+        import traceback
+        error_msg = str(e)
+        trace = traceback.format_exc()
+        output.append(f"[STOCK] ❌ Error: {error_msg}")
+        print(f"[STOCK] ❌ Error: {error_msg}", file=sys.stderr, flush=True)
+        print(trace, file=sys.stderr, flush=True)
+        
+        result = "<br>".join(output)
+        result += f"<br><br><pre>{trace}</pre>"
+        return result, 500
+
 @app.route("/admin/usuarios/nueva", methods=["GET", "POST"])
 @login_required
 @role_required("ADMIN")
