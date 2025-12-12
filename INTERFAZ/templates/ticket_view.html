@@ -120,6 +120,16 @@
                     </div>
                 </div>
             </div>
+            {% endif %}
+
+            <!-- INFORMACIÓN ADICIONAL -->
+            {% if not ticket.numero_ficha %}
+            <div class="alert alert-info">
+                <h5>ℹ️ Ticket en espera de revisión</h5>
+                <p>Este equipo ha sido recibido y está pendiente de que el técnico de DML cree la ficha de reparación.</p>
+                <p class="mb-0"><strong>Estado:</strong> A la espera de revisión inicial</p>
+            </div>
+            {% endif %}
 
             <!-- HISTORIAL DE CAMBIOS -->
             {% if historial %}
@@ -154,9 +164,11 @@
 
             <!-- BOTONES DE ACCIÓN (NO IMPRIMIR) -->
             <div class="no-print mt-4 mb-4">
+                {% if ticket.numero_ficha %}
                 <a href="{{ url_for('dml_view', id=ticket.ficha_id) }}" class="btn btn-primary">
                     📄 Ver Ficha Completa
                 </a>
+                {% endif %}
                 <a href="{{ url_for('tickets_list') }}" class="btn btn-secondary">
                     🔙 Volver a Tickets
                 </a>
