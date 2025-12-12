@@ -65,10 +65,11 @@
                 {% if user_role == 'ADMIN' %}
                 <form method="POST" action="{{ url_for('raypac_unfreeze', id=entry.id) }}" class="d-inline">
                     <input type="text" name="unfreeze_code" class="form-control d-inline-block" style="width: auto;" placeholder="Últimos 4 dígitos del remito" maxlength="4" pattern="\d{4}" required>
-                    <button type="submit" class="btn btn-warning btn-sm">Descongelar</button>
+                    <button type="submit" class="btn btn-warning btn-sm">🔓 Desfreezar Definitivamente</button>
+                    <small class="text-muted d-block mt-1">⚠️ Solo para cambios importantes (requiere validación)</small>
                 </form>
                 {% else %}
-                <small class="text-muted"><em>Solo ADMIN puede desfreezar</em></small>
+                <small class="text-muted"><em>Solo ADMIN puede desfreezar definitivamente</em></small>
                 {% endif %}
                 {% else %}
                 <strong>Pendiente de Freezar</strong> - Requiere N° de Remito para envío a ST
@@ -81,9 +82,19 @@
     <div class="row mb-3">
         <div class="col-md-12">
             {% if not readonly and user_role in ['ADMIN', 'RAYPAC'] %}
-            <a href="{{ url_for('raypac_edit', id=entry.id) }}" class="btn btn-primary">Editar</a>
             
-            {% if not entry.is_frozen %}
+            {% if entry.is_frozen %}
+            <!-- Modo freezado: solo botón para correcciones rápidas -->
+            <a href="{{ url_for('raypac_edit', id=entry.id) }}" class="btn btn-warning">
+                <i class="fas fa-edit"></i> Editar (Corregir errores de tipeo)
+            </a>
+            <small class="text-muted d-block mt-1">💡 Permite corregir errores sin desfreezar</small>
+            {% else %}
+            <!-- Modo editable: botón editar normal y opción de freezar -->
+            <a href="{{ url_for('raypac_edit', id=entry.id) }}" class="btn btn-primary">
+                <i class="fas fa-edit"></i> Editar
+            </a>
+            
             <form method="POST" action="{{ url_for('raypac_freeze', id=entry.id) }}" class="d-inline">
                 <input type="text" name="numero_remito" class="form-control d-inline-block" style="width: auto;" placeholder="Ej: 4222" pattern="[0-9]{1,5}" maxlength="5" required title="Ingresa solo los últimos 4 dígitos (Ej: 4222). El sistema lo convertirá a formato 00001-04222">
                 <button type="submit" class="btn btn-success">Freezar y Enviar a ST</button>

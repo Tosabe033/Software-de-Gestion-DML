@@ -208,6 +208,36 @@ def migrate_db():
         print(f"[MIGRATION] ⚠️  Error agregando campos de contacto: {e}")
         db.commit()
     
+    # Migración: Agregar campos de estado a envios_repuestos
+    try:
+        print("[MIGRATION] Verificando campos de estado en envios_repuestos...")
+        
+        columns = db.execute("PRAGMA table_info(envios_repuestos)").fetchall()
+        column_names = [col['name'] for col in columns]
+        
+        if 'estado_envio' not in column_names:
+            db.execute("ALTER TABLE envios_repuestos ADD COLUMN estado_envio TEXT DEFAULT 'ENVIADO'")
+            print("[MIGRATION] ✅ Columna estado_envio agregada")
+        
+        if 'is_frozen' not in column_names:
+            db.execute("ALTER TABLE envios_repuestos ADD COLUMN is_frozen INTEGER DEFAULT 1")
+            print("[MIGRATION] ✅ Columna is_frozen agregada (1=congelado por defecto)")
+        
+        if 'fecha_recepcion_dml' not in column_names:
+            db.execute("ALTER TABLE envios_repuestos ADD COLUMN fecha_recepcion_dml TEXT")
+            print("[MIGRATION] ✅ Columna fecha_recepcion_dml agregada")
+        
+        if 'usuario_recepcion_id' not in column_names:
+            db.execute("ALTER TABLE envios_repuestos ADD COLUMN usuario_recepcion_id INTEGER REFERENCES users(id)")
+            print("[MIGRATION] ✅ Columna usuario_recepcion_id agregada")
+        
+        db.commit()
+        print("[MIGRATION] ✅ Campos de estado de envíos verificados")
+        
+    except Exception as e:
+        print(f"[MIGRATION] ⚠️  Error agregando campos de estado: {e}")
+        db.commit()
+    
     # Migración: Agregar campos de acuse de recibo a dml_fichas
     try:
         print("[MIGRATION] Verificando campos de acuse de recibo...")
@@ -249,6 +279,38 @@ def migrate_db():
         if 'ticket_id' not in column_names:
             db.execute("ALTER TABLE dml_fichas ADD COLUMN ticket_id INTEGER REFERENCES tickets(id)")
             print("[MIGRATION] ✅ Columna ticket_id agregada a dml_fichas")
+        
+        # Agregar campos adicionales a tickets si no existen
+        columns_tickets = db.execute("PRAGMA table_info(tickets)").fetchall()
+        tickets_cols = [col['name'] for col in columns_tickets]
+        
+        if 'fecha_ingreso' not in tickets_cols:
+            db.execute("ALTER TABLE tickets ADD COLUMN fecha_ingreso TEXT")
+            print("[MIGRATION] ✅ Columna fecha_ingreso agregada a tickets")
+        
+        if 'tecnico_responsable' not in tickets_cols:
+            db.execute("ALTER TABLE tickets ADD COLUMN tecnico_responsable TEXT")
+            print("[MIGRATION] ✅ Columna tecnico_responsable agregada a tickets")
+        
+        if 'observaciones' not in tickets_cols:
+            db.execute("ALTER TABLE tickets ADD COLUMN observaciones TEXT")
+            print("[MIGRATION] ✅ Columna observaciones agregada a tickets")
+        
+        if 'estado_fisico' not in tickets_cols:
+            db.execute("ALTER TABLE tickets ADD COLUMN estado_fisico TEXT")
+            print("[MIGRATION] ✅ Columna estado_fisico agregada a tickets")
+        
+        if 'nivel_suciedad' not in tickets_cols:
+            db.execute("ALTER TABLE tickets ADD COLUMN nivel_suciedad TEXT")
+            print("[MIGRATION] ✅ Columna nivel_suciedad agregada a tickets")
+        
+        if 'falla_reportada' not in tickets_cols:
+            db.execute("ALTER TABLE tickets ADD COLUMN falla_reportada TEXT")
+            print("[MIGRATION] ✅ Columna falla_reportada agregada a tickets")
+        
+        if 'diagnostico_preliminar' not in tickets_cols:
+            db.execute("ALTER TABLE tickets ADD COLUMN diagnostico_preliminar TEXT")
+            print("[MIGRATION] ✅ Columna diagnostico_preliminar agregada a tickets")
         
         # FIX CRÍTICO: En SQLite no se puede modificar constraint NOT NULL directamente
         # Necesitamos recrear la tabla si ficha_id es NOT NULL
@@ -1590,15 +1652,33 @@ def ticket_nuevo(raypac_id):
     
     if request.method == "POST":
         try:
+            # Obtener datos del formulario
+            fecha_ingreso = request.form.get("fecha_ingreso") or raypac['fecha_recepcion']
+            tecnico_responsable = request.form.get("tecnico_responsable", "").strip()
+            observaciones = request.form.get("observaciones", "").strip()
+            estado_fisico = request.form.get("estado_fisico", "")
+            nivel_suciedad = request.form.get("nivel_suciedad", "")
+            falla_reportada = request.form.get("falla_reportada", "").strip()
+            diagnostico_preliminar = request.form.get("diagnostico_preliminar", "").strip()
+            
+            # Validación
+            if not tecnico_responsable:
+                flash("El técnico responsable es obligatorio.", "error")
+                return render_template("ticket_nuevo.html", raypac=raypac)
+            
             # Generar número de ticket: TK-{serie}
             numero_ticket = generate_ticket_number(raypac['numero_serie'])
             
             # Crear ticket sin ficha_id (será NULL hasta que se cree la ficha)
             db.execute("""
                 INSERT INTO tickets 
-                (numero_ticket, raypac_id, numero_serie, estado, ficha_id)
-                VALUES (?, ?, ?, 'ACTIVO', NULL)
-            """, (numero_ticket, raypac_id, raypac['numero_serie']))
+                (numero_ticket, raypac_id, numero_serie, estado, ficha_id,
+                 fecha_ingreso, tecnico_responsable, observaciones, 
+                 estado_fisico, nivel_suciedad, falla_reportada, diagnostico_preliminar)
+                VALUES (?, ?, ?, 'ACTIVO', NULL, ?, ?, ?, ?, ?, ?, ?)
+            """, (numero_ticket, raypac_id, raypac['numero_serie'], 
+                  fecha_ingreso, tecnico_responsable, observaciones,
+                  estado_fisico, nivel_suciedad, falla_reportada, diagnostico_preliminar))
             
             db.commit()
             
@@ -2517,18 +2597,38 @@ def envios_new():
                 return render_template("envios_form.html", stock=stock_raypac)
             
             seleccionados = []
+            
+            # Procesar repuestos de la tabla principal
             for row in stock_raypac:
                 qty_raw = (request.form.get(f"qty_{row['codigo_repuesto']}") or "0").strip()
                 try:
                     qty = int(qty_raw or 0)
                 except ValueError:
                     qty = 0
-                if qty <= 0:
-                    continue
-                if qty > row['cantidad']:
-                    flash(f"Stock insuficiente de {row['codigo_repuesto']} en RAYPAC.", "error")
-                    return render_template("envios_form.html", stock=stock_raypac)
-                seleccionados.append((row['codigo_repuesto'], row['item'], qty))
+                if qty > 0:
+                    seleccionados.append((row['codigo_repuesto'], row['item'], qty))
+            
+            # Procesar repuestos adicionales (no listados)
+            for key in request.form.keys():
+                if key.startswith('codigo_adicional_'):
+                    idx = key.replace('codigo_adicional_', '')
+                    codigo = request.form.get(f'codigo_adicional_{idx}', '').strip().upper()
+                    descripcion = request.form.get(f'descripcion_adicional_{idx}', '').strip()
+                    cantidad = request.form.get(f'cantidad_adicional_{idx}', '0').strip()
+                    
+                    try:
+                        qty = int(cantidad or 0)
+                    except ValueError:
+                        qty = 0
+                    
+                    if codigo and qty > 0:
+                        # Si no tiene descripción, buscarla en la matriz
+                        if not descripcion:
+                            rep = db.execute("SELECT item FROM matriz_repuestos WHERE codigo_repuesto = ?", (codigo,)).fetchone()
+                            descripcion = rep['item'] if rep else f"Repuesto {codigo}"
+                        
+                        seleccionados.append((codigo, descripcion, qty))
+            
             if not seleccionados:
                 flash("Selecciona al menos un repuesto con cantidad mayor a 0.", "error")
                 return render_template("envios_form.html", stock=stock_raypac)
@@ -2536,13 +2636,16 @@ def envios_new():
             fecha_envio = datetime.now().strftime("%Y-%m-%d")
 
             db.execute(
-                "INSERT INTO envios_repuestos (numero_remito, fecha_envio, tipo_entrega) VALUES (?, ?, ?)",
+                """INSERT INTO envios_repuestos 
+                   (numero_remito, fecha_envio, tipo_entrega, estado_envio, is_frozen) 
+                   VALUES (?, ?, ?, 'ENVIADO', 1)""",
                 (numero_remito, fecha_envio, tipo_entrega)
             )
             envio_id = db.execute("SELECT last_insert_rowid() as id").fetchone()['id']
 
+            # Guardar detalles del envío
+            # IMPORTANTE: NO descontamos stock de RAYPAC (ellos no controlan stock desde este software)
             for codigo, item, qty in seleccionados:
-                ajustar_stock_ubicacion(codigo, "RAYPAC", -qty)
                 db.execute(
                     "INSERT INTO envios_repuestos_detalles (envio_id, codigo_repuesto, cantidad) VALUES (?, ?, ?)",
                     (envio_id, codigo, qty)
@@ -2595,7 +2698,7 @@ def envios_confirmar(id):
     if not envio:
         flash("Envío no encontrado.", "error")
         return redirect(url_for("envios_list"))
-    if envio['estado'] != 'PENDIENTE':
+    if envio.get('estado_envio') == 'RECIBIDO':
         flash("El envío ya fue confirmado.", "warning")
         return redirect(url_for("envios_view", id=id))
 
@@ -2608,23 +2711,27 @@ def envios_confirmar(id):
         return redirect(url_for("envios_view", id=id))
 
     try:
+        fecha_recepcion = datetime.now().strftime("%Y-%m-%d")
+        
+        # Actualizar stock DML con los repuestos recibidos
         for det in detalles:
             codigo = det['codigo_repuesto']
             qty = det['cantidad']
-            existente = db.execute(
-                "SELECT * FROM stock_dml WHERE codigo_repuesto = ?",
-                (codigo,)
-            ).fetchone()
-            if existente:
-                db.execute(
-                    "UPDATE stock_dml SET cantidad = cantidad + ?, updated_at = CURRENT_TIMESTAMP WHERE codigo_repuesto = ?",
-                    (qty, codigo)
-                )
-            else:
-                item = det['item'] or det['codigo_repuesto']
-                db.execute(
-                    "INSERT INTO stock_dml (codigo_repuesto, item, cantidad, cantidad_minima, estado_alerta) VALUES (?, ?, ?, 1, 'OK')",
-                    (codigo, item, qty)
+            
+            # Agregar a stock de DML
+            ajustar_stock_ubicacion(codigo, "DML", qty)
+        
+        # Marcar envío como recibido
+        db.execute(
+            """UPDATE envios_repuestos 
+               SET estado_envio = 'RECIBIDO', 
+                   fecha_recepcion_dml = ?, 
+                   usuario_recepcion_id = ?,
+                   updated_at = CURRENT_TIMESTAMP 
+               WHERE id = ?""",
+            (fecha_recepcion, user['id'], id)
+        )
+        db.commit()
                 )
             ajustar_stock_ubicacion(codigo, "DML", qty)
             actualizar_estado_alerta_stock(codigo)
@@ -2663,6 +2770,105 @@ def envios_confirmar(id):
     except Exception as e:
         db.rollback()
         flash(f"Error al confirmar envío: {e}", "error")
+        return redirect(url_for("envios_view", id=id))
+
+@app.route("/envios/<int:id>/edit", methods=["GET", "POST"])
+@login_required
+@role_required("ADMIN", "RAYPAC")
+def envios_edit(id):
+    """Editar envío congelado (solo corrección de errores)"""
+    user = get_current_user()
+    db = get_db()
+    
+    envio = db.execute("SELECT * FROM envios_repuestos WHERE id = ?", (id,)).fetchone()
+    if not envio:
+        flash("Envío no encontrado.", "error")
+        return redirect(url_for("envios_list"))
+    
+    if request.method == "POST":
+        try:
+            nuevo_remito = request.form.get("numero_remito", "").strip()
+            
+            if not nuevo_remito:
+                flash("El número de remito es obligatorio.", "error")
+                return redirect(url_for("envios_edit", id=id))
+            
+            # Verificar que no exista otro envío con ese remito
+            existe = db.execute(
+                "SELECT id FROM envios_repuestos WHERE numero_remito = ? AND id != ?", 
+                (nuevo_remito, id)
+            ).fetchone()
+            
+            if existe:
+                flash(f"Ya existe otro envío con el remito {nuevo_remito}.", "error")
+                return redirect(url_for("envios_edit", id=id))
+            
+            db.execute(
+                "UPDATE envios_repuestos SET numero_remito = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+                (nuevo_remito, id)
+            )
+            db.commit()
+            
+            log_action(user['id'], "UPDATE", "envios_repuestos", id, 
+                      f"Remito: {envio['numero_remito']} → {nuevo_remito}", 
+                      "Corrección de remito")
+            
+            flash(f"✅ Remito actualizado a: {nuevo_remito}", "success")
+            return redirect(url_for("envios_view", id=id))
+            
+        except Exception as e:
+            db.rollback()
+            flash(f"Error al actualizar envío: {e}", "error")
+            return redirect(url_for("envios_edit", id=id))
+    
+    detalles = db.execute(
+        """SELECT d.*, m.item 
+           FROM envios_repuestos_detalles d
+           LEFT JOIN matriz_repuestos m ON m.codigo_repuesto = d.codigo_repuesto
+           WHERE d.envio_id = ?
+           ORDER BY d.codigo_repuesto""",
+        (id,)
+    ).fetchall()
+    
+    return render_template("envios_edit.html", envio=envio, detalles=detalles)
+
+@app.route("/envios/<int:id>/unfreeze", methods=["POST"])
+@login_required
+@role_required("ADMIN")
+def envios_unfreeze(id):
+    """Desfreezar envío definitivamente (solo ADMIN con código)"""
+    user = get_current_user()
+    db = get_db()
+    
+    envio = db.execute("SELECT * FROM envios_repuestos WHERE id = ?", (id,)).fetchone()
+    if not envio:
+        flash("Envío no encontrado.", "error")
+        return redirect(url_for("envios_list"))
+    
+    # Verificar código de desfreeze (últimos 4 dígitos del remito)
+    codigo = request.form.get("unfreeze_code", "").strip()
+    remito_digitos = envio['numero_remito'][-4:]
+    
+    if codigo != remito_digitos:
+        flash("❌ Código incorrecto. Ingresa los últimos 4 dígitos del remito.", "error")
+        return redirect(url_for("envios_view", id=id))
+    
+    try:
+        db.execute(
+            "UPDATE envios_repuestos SET is_frozen = 0, updated_at = CURRENT_TIMESTAMP WHERE id = ?",
+            (id,)
+        )
+        db.commit()
+        
+        log_action(user['id'], "UNFREEZE", "envios_repuestos", id, None, 
+                  f"Envío descongelado por ADMIN")
+        
+        flash("🔓 Envío descongelado correctamente.", "success")
+        return redirect(url_for("envios_view", id=id))
+        
+    except Exception as e:
+        db.rollback()
+        flash(f"Error al descongelar envío: {e}", "error")
         return redirect(url_for("envios_view", id=id))
 
 # ======================== STOCK ========================

@@ -7,25 +7,55 @@
       <h2 class="mb-1">Remito {{ envio.numero_remito }}</h2>
       <p class="text-muted mb-1">Fecha envío: {{ envio.fecha_envio }}</p>
       <p class="text-muted mb-0">Estado: 
-        {% if envio.estado == 'PENDIENTE' %}
-        <span class="badge bg-warning text-dark">Pendiente</span>
+        {% if envio.estado_envio == 'RECIBIDO' %}
+        <span class="badge bg-success">Recibido en DML</span>
         {% else %}
-        <span class="badge bg-success">Recibido</span>
+        <span class="badge bg-warning text-dark">En tránsito</span>
         {% endif %}
       </p>
+      {% if envio.is_frozen %}
+      <p class="text-muted mb-0">
+        <i class="bi bi-lock-fill"></i> <strong>Congelado</strong>
+        {% if session.get('user_id') and session.get('role') in ['ADMIN', 'RAYPAC'] %}
+        - Se puede editar para correcciones
+        {% endif %}
+      </p>
+      {% endif %}
     </div>
     <div class="text-end">
       <a class="btn btn-outline-secondary" href="{{ url_for('envios_list') }}">Volver al listado</a>
-      {% if envio.estado == 'PENDIENTE' and get_current_user() and get_current_user()['role'] in ['ADMIN', 'DML_REPUESTOS'] %}
-      <form method="POST" action="{{ url_for('envios_confirmar', id=envio.id) }}" class="d-inline" onsubmit="return confirm('Confirmar recepción en DML?');">
-        <button type="submit" class="btn btn-success"><i class="bi bi-check-circle"></i> Confirmar recepción</button>
+      
+      {% if session.get('user_id') and session.get('role') in ['ADMIN', 'RAYPAC'] %}
+        {% if envio.is_frozen %}
+        <!-- Modo congelado: permitir editar para correcciones -->
+        <a href="{{ url_for('envios_edit', id=envio.id) }}" class="btn btn-warning">
+          <i class="bi bi-pencil"></i> Editar (Corregir errores)
+        </a>
+        
+        {% if session.get('role') == 'ADMIN' %}
+        <!-- Solo ADMIN puede desfreezar definitivamente -->
+        <button type="button" class="btn btn-outline-warning" data-bs-toggle="modal" data-bs-target="#unfreezeModal">
+          <i class="bi bi-unlock"></i> Desfreezar Definitivamente
+        </button>
+        {% endif %}
+        {% endif %}
+      {% endif %}
+      
+      {% if envio.estado_envio == 'ENVIADO' and session.get('user_id') and session.get('role') in ['ADMIN', 'DML_REPUESTOS'] %}
+      <form method="POST" action="{{ url_for('envios_confirmar', id=envio.id) }}" class="d-inline" 
+            onsubmit="return confirm('¿Confirmar que todos los repuestos fueron recibidos correctamente según el remito?');">
+        <button type="submit" class="btn btn-success">
+          <i class="bi bi-check-circle"></i> Dar Ingreso en DML
+        </button>
       </form>
       {% endif %}
     </div>
   </div>
 
-  {% if envio.fecha_recepcion %}
-  <div class="alert alert-success">Recibido en DML el {{ envio.fecha_recepcion }}.</div>
+  {% if envio.fecha_recepcion_dml %}
+  <div class="alert alert-success">
+    <i class="bi bi-check-circle-fill"></i> <strong>Recibido en DML</strong> el {{ envio.fecha_recepcion_dml }}.
+  </div>
   {% endif %}
 
   <div class="card">
@@ -49,6 +79,40 @@
           {% endfor %}
         </tbody>
       </table>
+    </div>
+  </div>
+</div>
+
+<!-- Modal de desfreeze (solo ADMIN) -->
+<div class="modal fade" id="unfreezeModal" tabindex="-1" aria-labelledby="unfreezeModalLabel" aria-hidden="true">
+  <div class="modal-dialog">
+    <div class="modal-content">
+      <div class="modal-header bg-warning">
+        <h5 class="modal-title" id="unfreezeModalLabel">
+          <i class="bi bi-unlock-fill"></i> Desfreezar Envío
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+      </div>
+      <form method="POST" action="{{ url_for('envios_unfreeze', id=envio.id) }}">
+        <div class="modal-body">
+          <div class="alert alert-warning">
+            <i class="bi bi-exclamation-triangle"></i> <strong>Acción sensible:</strong> 
+            Desfreezar permitirá modificaciones completas al envío.
+          </div>
+          <div class="mb-3">
+            <label for="unfreeze_code" class="form-label">Código de verificación</label>
+            <input type="text" class="form-control" id="unfreeze_code" name="unfreeze_code" 
+                   placeholder="Últimos 4 dígitos del remito" maxlength="4" pattern="\d{4}" required>
+            <small class="text-muted">Ingresa los últimos 4 dígitos del remito {{ envio.numero_remito }}</small>
+          </div>
+        </div>
+        <div class="modal-footer">
+          <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+          <button type="submit" class="btn btn-warning">
+            <i class="bi bi-unlock"></i> Desfreezar
+          </button>
+        </div>
+      </form>
     </div>
   </div>
 </div>

@@ -55,6 +55,70 @@
             </div>
 
             <form method="POST">
+                <div class="card mb-3">
+                    <div class="card-header bg-light">
+                        <h5><i class="bi bi-clipboard-check"></i> Información del Ticket</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="fecha_ingreso" class="form-label">Fecha de Ingreso *</label>
+                                <input type="date" class="form-control" id="fecha_ingreso" name="fecha_ingreso" 
+                                       value="{{ raypac.fecha_recepcion }}" required>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="tecnico_responsable" class="form-label">Técnico ST Responsable *</label>
+                                <input type="text" class="form-control" id="tecnico_responsable" 
+                                       name="tecnico_responsable" placeholder="Nombre del técnico" required>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="observaciones" class="form-label">Observaciones</label>
+                            <textarea class="form-control" id="observaciones" name="observaciones" 
+                                      rows="3" placeholder="Observaciones adicionales sobre el ticket"></textarea>
+                        </div>
+
+                        <hr>
+                        <h6 class="text-muted mb-3"><i class="bi bi-tools"></i> Estado del Equipo</h6>
+                        
+                        <div class="row">
+                            <div class="col-md-6 mb-3">
+                                <label for="estado_fisico" class="form-label">Estado Físico</label>
+                                <select class="form-select" id="estado_fisico" name="estado_fisico">
+                                    <option value="">Seleccionar...</option>
+                                    <option value="BUENO">Bueno</option>
+                                    <option value="REGULAR">Regular</option>
+                                    <option value="MALO">Malo</option>
+                                    <option value="MUY_MALO">Muy Malo</option>
+                                </select>
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="nivel_suciedad" class="form-label">Nivel de Suciedad</label>
+                                <select class="form-select" id="nivel_suciedad" name="nivel_suciedad">
+                                    <option value="">Seleccionar...</option>
+                                    <option value="LIMPIO">Limpio</option>
+                                    <option value="POCO">Poco Sucio</option>
+                                    <option value="MODERADO">Moderadamente Sucio</option>
+                                    <option value="MUY_SUCIO">Muy Sucio</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="falla_reportada" class="form-label">Falla Reportada por Cliente</label>
+                            <textarea class="form-control" id="falla_reportada" name="falla_reportada" 
+                                      rows="2" placeholder="Descripción de la falla según el cliente"></textarea>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="diagnostico_preliminar" class="form-label">Diagnóstico Preliminar</label>
+                            <textarea class="form-control" id="diagnostico_preliminar" name="diagnostico_preliminar" 
+                                      rows="2" placeholder="Diagnóstico inicial del técnico"></textarea>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="alert alert-success">
                     <h5><i class="bi bi-check-circle"></i> Confirmación</h5>
                     <p class="mb-0">
