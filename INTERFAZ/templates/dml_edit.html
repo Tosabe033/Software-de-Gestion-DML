@@ -324,14 +324,14 @@
                         alertDiv.style.border = '2px solid #ffc107';
                         alertDiv.innerHTML = `⚠️ <strong>ÚLTIMO REPUESTO</strong> - Disponible: ${stockDisponible} unidad. Será marcado EN STOCK y descontado.`;
                     } else if (stockDisponible === 2) {
-                        alertDiv.style.backgroundColor = '#fff3cd';
-                        alertDiv.style.color = '#856404';
-                        alertDiv.style.border = '2px solid #ff9800';
+                        alertDiv.style.backgroundColor = '#ffe5cc';
+                        alertDiv.style.color = '#663300';
+                        alertDiv.style.border = '2px solid #ff6600';
                         alertDiv.innerHTML = `🟠 <strong>STOCK BAJO</strong> - Disponible: ${stockDisponible} unidades. Considere solicitar más.`;
                     } else if (stockDisponible < cantidad) {
-                        alertDiv.style.backgroundColor = '#fff3cd';
-                        alertDiv.style.color = '#856404';
-                        alertDiv.style.border = '2px solid #ff9800';
+                        alertDiv.style.backgroundColor = '#ffe5cc';
+                        alertDiv.style.color = '#663300';
+                        alertDiv.style.border = '2px solid #ff6600';
                         alertDiv.innerHTML = `⚠️ <strong>STOCK INSUFICIENTE</strong> - Necesita: ${cantidad}, Disponible: ${stockDisponible}. Se marcará EN FALTA.`;
                         stockSuficiente = false;
                     } else {
