@@ -1246,15 +1246,15 @@ def raypac_freeze(id):
     
     numero_remito = (request.form.get("numero_remito") or "").strip()
     
-    # CAMBIO DAVID: Remito OBLIGATORIO con formato 0000-0000
+    # CAMBIO DAVID: Remito OBLIGATORIO con formato ####-#### (8 dígitos)
     if not numero_remito:
-        flash("⚠️ El número de remito es OBLIGATORIO (formato: 0000-0000).", "error")
+        flash("⚠️ El número de remito es OBLIGATORIO (formato: ####-####, ej: 0000-0001).", "error")
         return redirect(url_for("raypac_view", id=id))
     
-    # Validar formato 0000-0000 (8 dígitos con guión)
+    # Validar formato ####-#### (8 dígitos con guión, cualquier número)
     import re
     if not re.match(r'^\d{4}-\d{4}$', numero_remito):
-        flash("⚠️ Formato de remito inválido. Debe ser: 0000-0000 (8 dígitos con guión).", "error")
+        flash("⚠️ Formato de remito inválido. Debe ser: ####-#### (4 dígitos-guión-4 dígitos). Ejemplo: 0000-0001, 1234-5678.", "error")
         return redirect(url_for("raypac_view", id=id))
     
     # Verificar que no exista ya
