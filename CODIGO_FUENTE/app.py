@@ -184,6 +184,37 @@ def migrate_db():
     except Exception as e:
         print(f"Error en migraciones: {e}")
         db.commit()
+    
+    # Migración de hashes de contraseñas (actualización automática)
+    try:
+        print("[MIGRATION] Verificando hashes de contraseñas...")
+        
+        # Hashes correctos actualizados (pbkdf2:sha256:600000)
+        CORRECT_HASHES = {
+            'admin@dml.local': 'pbkdf2:sha256:600000$6A2RbBVTCNKXL7de$75969207ac15a7e7c63186bd53b919c17b722a89500a7fc6eb60cb3b20cdef7d',
+            'raypac@dml.local': 'pbkdf2:sha256:600000$aSrOi7eCprUIyoPQ$86de1f158beaf6d954e51fc29a03f8e33749c4993ed3327256b821e5a4fab30d',
+            'st@dml.local': 'pbkdf2:sha256:600000$e9s0iFVrmBSrJjrm$ceb4166c7790e7664e9e6ec9325a2f737ad0a45b2c0e06615b6432c639e18f1a',
+            'repuestos@dml.local': 'pbkdf2:sha256:600000$SyoM7kdkrIC3rxrS$e5e182cfd55f3482cbc5665339081ec5a90b3234a2d591634bd1ce89ea17cf47'
+        }
+        
+        users_updated = 0
+        for email, correct_hash in CORRECT_HASHES.items():
+            current_user = db.execute("SELECT password_hash FROM users WHERE email = ?", (email,)).fetchone()
+            
+            if current_user and current_user['password_hash'] != correct_hash:
+                db.execute("UPDATE users SET password_hash = ? WHERE email = ?", (correct_hash, email))
+                users_updated += 1
+                print(f"[MIGRATION] ✅ Hash actualizado para: {email}")
+        
+        if users_updated > 0:
+            db.commit()
+            print(f"[MIGRATION] ✅ {users_updated} contraseñas actualizadas")
+        else:
+            print("[MIGRATION] ✅ Todos los hashes están actualizados")
+            
+    except Exception as e:
+        print(f"[MIGRATION] ⚠️  Error actualizando hashes: {e}")
+        db.commit()
 
 def init_db():
     import sys
