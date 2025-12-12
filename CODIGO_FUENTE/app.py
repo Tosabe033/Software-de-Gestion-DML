@@ -1887,7 +1887,7 @@ def dml_close(id):
 
 @app.route("/tickets")
 @login_required
-@role_required("ADMIN", "DML_REPUESTOS", "DML_ST")
+@role_required("ADMIN", "DML_REPUESTOS", "DML_ST", "RAYPAC")
 def tickets_list():
     """Listado de tickets activos (no cerrados) con búsqueda y filtro."""
     db = get_db()
