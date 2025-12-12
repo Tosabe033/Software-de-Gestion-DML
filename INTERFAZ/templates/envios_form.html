@@ -6,6 +6,24 @@
   <p class="text-muted">Selecciona las cantidades a despachar desde RAYPAC hacia DML.</p>
 
   <form method="POST">
+    <!-- Campo de remito OBLIGATORIO -->
+    <div class="card mb-4" style="border-left: 4px solid #ffc107;">
+      <div class="card-body">
+        <h5 class="card-title text-warning"><i class="bi bi-file-text-fill"></i> Número de Remito</h5>
+        <div class="row">
+          <div class="col-md-6">
+            <label for="numero_remito" class="form-label fw-bold">Remito RAYPAC <span class="text-danger">*</span></label>
+            <input type="text" class="form-control form-control-lg" id="numero_remito" name="numero_remito" 
+                   placeholder="Ej: 4222 (últimos 4 dígitos) o 00001-04222 (completo)" required>
+            <small class="text-muted">
+              Puedes ingresar solo los últimos 4 dígitos y el sistema auto-completará el formato.
+            </small>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+    <h5 class="mb-3">Repuestos a enviar</h5>
     <table class="table table-sm table-bordered align-middle">
       <thead class="table-light">
         <tr>

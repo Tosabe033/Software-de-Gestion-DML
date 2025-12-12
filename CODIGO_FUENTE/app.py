@@ -1273,13 +1273,18 @@ def raypac_freeze(id):
     
     # CAMBIO DAVID: Remito OBLIGATORIO con formato ####-#### (8 dígitos)
     if not numero_remito:
-        flash("⚠️ El número de remito es OBLIGATORIO (formato: ####-####, ej: 0000-0001).", "error")
+        flash("⚠️ El número de remito es OBLIGATORIO para freezar y enviar. Formato: últimos 4 dígitos o completo ####-####.", "error")
         return redirect(url_for("raypac_view", id=id))
     
-    # Validar formato ####-#### (8 dígitos con guión, cualquier número)
+    # Auto-completar formato si solo ingresa 4 dígitos (últimos)
     import re
-    if not re.match(r'^\d{4}-\d{4}$', numero_remito):
-        flash("⚠️ Formato de remito inválido. Debe ser: ####-#### (4 dígitos-guión-4 dígitos). Ejemplo: 0000-0001, 1234-5678.", "error")
+    if re.match(r'^\d{1,4}$', numero_remito):
+        # Usuario ingresó solo números (1-4 dígitos), auto-completar
+        ultimo = numero_remito.zfill(4)  # Rellenar con ceros a la izquierda
+        numero_remito = f"00001-{ultimo}"  # Formato: 00001-XXXX
+        flash(f"📋 Remito auto-completado: {numero_remito}", "info")
+    elif not re.match(r'^\d{4,5}-\d{4,7}$', numero_remito):
+        flash("⚠️ Formato de remito inválido. Ingresa solo los últimos 4 dígitos (ej: 4222) o el formato completo ####-#### (ej: 00001-04222).", "error")
         return redirect(url_for("raypac_view", id=id))
     
     # Verificar que no exista ya
@@ -2083,6 +2088,32 @@ def envios_new():
 
     if request.method == "POST":
         try:
+            # OBLIGATORIO: Número de remito manual
+            numero_remito_input = (request.form.get("numero_remito") or "").strip()
+            
+            if not numero_remito_input:
+                flash("⚠️ El número de remito es OBLIGATORIO para enviar repuestos.", "error")
+                return render_template("envios_form.html", stock=stock_raypac)
+            
+            # Auto-completar formato si solo ingresa 4 dígitos (últimos)
+            import re
+            if re.match(r'^\d{1,4}$', numero_remito_input):
+                # Usuario ingresó solo números (1-4 dígitos), auto-completar
+                ultimo = numero_remito_input.zfill(4)  # Rellenar con ceros a la izquierda
+                numero_remito = f"00001-{ultimo}"  # Formato: 00001-XXXX
+                flash(f"📋 Remito auto-completado: {numero_remito}", "info")
+            elif re.match(r'^\d{4,5}-\d{4,7}$', numero_remito_input):
+                numero_remito = numero_remito_input
+            else:
+                flash("⚠️ Formato de remito inválido. Ingresa solo los últimos 4 dígitos (ej: 4222) o el formato completo ####-#### (ej: 00001-04222).", "error")
+                return render_template("envios_form.html", stock=stock_raypac)
+            
+            # Verificar que no exista ya
+            existe = db.execute("SELECT id FROM envios_repuestos WHERE numero_remito = ?", (numero_remito,)).fetchone()
+            if existe:
+                flash(f"⚠️ El número de remito {numero_remito} ya existe en el sistema.", "error")
+                return render_template("envios_form.html", stock=stock_raypac)
+            
             seleccionados = []
             for row in stock_raypac:
                 qty_raw = (request.form.get(f"qty_{row['codigo_repuesto']}") or "0").strip()
@@ -2100,7 +2131,6 @@ def envios_new():
                 flash("Selecciona al menos un repuesto con cantidad mayor a 0.", "error")
                 return render_template("envios_form.html", stock=stock_raypac)
 
-            numero_remito = generate_remito_envio()
             fecha_envio = datetime.now().strftime("%Y-%m-%d")
 
             db.execute(
@@ -2292,7 +2322,7 @@ def stock_list(readonly=False):
 
 @app.route("/stock/new", methods=["GET", "POST"])
 @login_required
-@role_required("ADMIN", "DML_REPUESTOS", "RAYPAC")
+@role_required("ADMIN", "RAYPAC")
 def stock_new():
     user = get_current_user()
     db = get_db()
@@ -2368,7 +2398,7 @@ def stock_new():
 
 @app.route("/stock/<codigo>/edit", methods=["GET", "POST"])
 @login_required
-@role_required("ADMIN", "DML_REPUESTOS", "RAYPAC")
+@role_required("ADMIN", "RAYPAC")
 def stock_edit(codigo):
     user = get_current_user()
     db = get_db()

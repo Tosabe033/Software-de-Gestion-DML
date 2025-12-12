@@ -23,16 +23,21 @@
                 </div>
             </div>
             
-            {% if user.role in ['ADMIN', 'DML_REPUESTOS', 'RAYPAC'] and not readonly %}
+            {% if user.role in ['ADMIN', 'RAYPAC'] and not readonly %}
             <div class="d-flex gap-2 mb-3">
                 <a href="{{ url_for('stock_new', ubicacion=ubicacion) }}" class="btn btn-success">+ Nuevo Repuesto</a>
                 {% if user.role in ['ADMIN', 'DML_REPUESTOS', 'DML_ST'] %}
                 <a href="{{ url_for('estadisticas') }}" class="btn btn-info">📊 Estadísticas de uso</a>
                 {% endif %}
             </div>
-            {% elif user.role == 'DML_ST' and readonly %}
+            {% elif user.role in ['DML_ST', 'DML_REPUESTOS'] and readonly or user.role == 'DML_REPUESTOS' %}
             <div class="d-flex gap-2 mb-3">
                 <a href="{{ url_for('estadisticas') }}" class="btn btn-info">📊 Estadísticas de uso</a>
+                {% if user.role == 'DML_REPUESTOS' %}
+                <div class="alert alert-info py-2 mb-0 ms-3">
+                    <i class="bi bi-eye"></i> <strong>Modo Solo Lectura:</strong> Puedes ver stock y estadísticas, sin editar.
+                </div>
+                {% endif %}
             </div>
             {% endif %}
             
@@ -62,7 +67,7 @@
                         <th>Descripción</th>
                         <th>Cantidad</th>
                         <th>Estado</th>
-                        {% if user.role in ['ADMIN', 'DML_REPUESTOS', 'RAYPAC'] %}
+                        {% if user.role in ['ADMIN', 'RAYPAC'] %}
                         <th>Acciones</th>
                         {% endif %}
                     </tr>
@@ -88,7 +93,7 @@
                             <span class="badge bg-secondary">N/A</span>
                             {% endif %}
                         </td>
-                        {% if user.role in ['ADMIN', 'DML_REPUESTOS', 'RAYPAC'] %}
+                        {% if user.role in ['ADMIN', 'RAYPAC'] %}
                         <td>
                             <a href="{{ url_for('stock_edit', codigo=row.codigo_repuesto, ubicacion=ubicacion) }}" class="btn btn-sm btn-primary">Editar</a>
                             {% if user.role == 'ADMIN' %}
