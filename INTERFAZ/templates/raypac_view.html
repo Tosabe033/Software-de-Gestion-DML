@@ -24,14 +24,30 @@
                 </div>
             </div>
 
+            {% if user_role in ['ADMIN', 'RAYPAC'] %}
             <div class="row mb-3">
                 <div class="col-md-6">
-                    <strong>N° Batería:</strong> {{ entry.numero_bateria }}<br>
-                    <strong>N° Cargador:</strong> {{ entry.numero_cargador }}
+                    <strong>Contacto Cliente:</strong> {{ entry.contacto_cliente or 'No especificado' }}<br>
+                    <strong>Email Cliente:</strong> {{ entry.email_cliente or 'No especificado' }}
                 </div>
                 <div class="col-md-6">
                     <strong>Comercial:</strong> {{ entry.comercial }}<br>
                     <strong>Email Comercial:</strong> {{ entry.mail_comercial }}
+                </div>
+            </div>
+            {% else %}
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <strong>Comercial:</strong> {{ entry.comercial }}<br>
+                    <strong>Email Comercial:</strong> {{ entry.mail_comercial }}
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="row mb-3">
+                <div class="col-md-6">
+                    <strong>N° Batería:</strong> {{ entry.numero_bateria }}<br>
+                    <strong>N° Cargador:</strong> {{ entry.numero_cargador }}
                 </div>
             </div>
 
@@ -46,10 +62,14 @@
                 {% if entry.is_frozen %}
                 <strong>✓ Freezado:</strong> {{ entry.frozen_at }}<br>
                 <strong>Remito de Envío:</strong> {{ entry.numero_remito }}<br><br>
+                {% if user_role == 'ADMIN' %}
                 <form method="POST" action="{{ url_for('raypac_unfreeze', id=entry.id) }}" class="d-inline">
                     <input type="text" name="unfreeze_code" class="form-control d-inline-block" style="width: auto;" placeholder="Últimos 4 dígitos del remito" maxlength="4" pattern="\d{4}" required>
                     <button type="submit" class="btn btn-warning btn-sm">Descongelar</button>
                 </form>
+                {% else %}
+                <small class="text-muted"><em>Solo ADMIN puede desfreezar</em></small>
+                {% endif %}
                 {% else %}
                 <strong>Pendiente de Freezar</strong> - Requiere N° de Remito (formato 0000-0000) para envío a ST
                 {% endif %}

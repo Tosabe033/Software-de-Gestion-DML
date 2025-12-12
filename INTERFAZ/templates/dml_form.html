@@ -8,12 +8,25 @@
         <div class="col-md-10 offset-md-1">
             <h2>Nueva Ficha de Servicio Técnico DML</h2>
             
+            {% if ticket %}
+            <div class="alert alert-success">
+                <h5><i class="bi bi-ticket-perforated-fill"></i> Ticket Asociado</h5>
+                <p class="mb-0">
+                    <strong>Número:</strong> <code class="fs-5">{{ ticket.numero_ticket }}</code><br>
+                    <small class="text-muted">Este ticket ya fue enviado al comercial y quedará vinculado a la ficha</small>
+                </p>
+            </div>
+            {% endif %}
+            
             {% if raypac %}
             <div class="alert alert-info">
                 <strong>RAYPAC Origen:</strong> 
                 Cliente: {{ raypac.cliente }} | 
                 Serie: {{ raypac.numero_serie }} | 
                 Modelo: {{ raypac.modelo_maquina }}
+                {% if raypac.diagnostico_ingreso %}
+                <br><strong>Diagnóstico Ingreso RAYPAC:</strong> {{ raypac.diagnostico_ingreso }}
+                {% endif %}
             </div>
             {% endif %}
 

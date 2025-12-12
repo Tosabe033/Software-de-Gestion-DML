@@ -42,6 +42,23 @@
 
                         <div class="row mb-3">
                             <div class="col-md-6">
+                                <label for="contacto_cliente" class="form-label">Contacto del Cliente</label>
+                                <input type="text" class="form-control" id="contacto_cliente" name="contacto_cliente" 
+                                       value="{{ entry.contacto_cliente if entry else '' }}" 
+                                       placeholder="Nombre del contacto">
+                                <small class="text-muted">Visible solo para RAYPAC y ADMIN</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="email_cliente" class="form-label">Email del Cliente</label>
+                                <input type="email" class="form-control" id="email_cliente" name="email_cliente" 
+                                       value="{{ entry.email_cliente if entry else '' }}"
+                                       placeholder="correo@empresa.com">
+                                <small class="text-muted">Visible solo para RAYPAC y ADMIN</small>
+                            </div>
+                        </div>
+
+                        <div class="row mb-3">
+                            <div class="col-md-6">
                                 <label for="modelo_maquina" class="form-label">Modelo Máquina *</label>
                                 <select class="form-control" id="modelo_maquina" name="modelo_maquina" required>
                                     <option value="">Selecciona</option>

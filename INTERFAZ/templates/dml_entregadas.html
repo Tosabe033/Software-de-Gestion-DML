@@ -1,0 +1,129 @@
+{% extends "base.html" %}
+
+{% block title %}Fichas Entregadas - Acuses de Recibo{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="row mb-4">
+        <div class="col-md-8">
+            <h2>📦 Máquinas Entregadas - Acuse de Recibo</h2>
+            <p class="text-muted">Registro de máquinas entregadas a clientes</p>
+        </div>
+        <div class="col-md-4 text-right">
+            <a class="btn btn-secondary" href="{{ url_for('dml_list') }}">
+                <i class="fas fa-arrow-left"></i> Volver a Fichas
+            </a>
+        </div>
+    </div>
+
+    {% if fichas|length == 0 %}
+    <div class="alert alert-info">
+        <i class="fas fa-info-circle"></i> No hay fichas entregadas registradas aún.
+    </div>
+    {% else %}
+    <div class="table-responsive">
+        <table class="table table-hover table-striped">
+            <thead class="thead-dark">
+                <tr>
+                    <th>N° Ficha</th>
+                    <th>Cliente</th>
+                    <th>Serie</th>
+                    <th>Fecha Entrega</th>
+                    <th>Recibido Por</th>
+                    <th>Contacto</th>
+                    <th>Email</th>
+                    <th>Acciones</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for ficha in fichas %}
+                <tr>
+                    <td style="color: black;"><strong>#{{ '%07d' % ficha.numero_ficha }}</strong></td>
+                    <td style="color: black;">{{ ficha.cliente }}</td>
+                    <td style="color: black;"><code>{{ ficha.numero_serie }}</code></td>
+                    <td style="color: black;">
+                        {% if ficha.fecha_entrega_cliente %}
+                            {{ ficha.fecha_entrega_cliente }}
+                        {% else %}
+                            <span class="badge badge-warning">Sin fecha</span>
+                        {% endif %}
+                    </td>
+                    <td style="color: black;">
+                        {% if ficha.recibido_por %}
+                            <strong>{{ ficha.recibido_por }}</strong>
+                        {% else %}
+                            <span class="badge badge-secondary">No especificado</span>
+                        {% endif %}
+                    </td>
+                    <td style="color: black;">{{ ficha.contacto_cliente or '-' }}</td>
+                    <td style="color: black;">{{ ficha.email_cliente or '-' }}</td>
+                    <td>
+                        <a href="{{ url_for('dml_view', id=ficha.id) }}" class="btn btn-sm btn-info" title="Ver Ficha">
+                            <i class="fas fa-eye"></i> Ver
+                        </a>
+                        {% if not ficha.recibido_por %}
+                        <button type="button" class="btn btn-sm btn-success" data-toggle="modal" data-target="#modalAcuse{{ ficha.id }}" title="Registrar Acuse">
+                            <i class="fas fa-check"></i> Acuse
+                        </button>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% endif %}
+</div>
+
+<!-- Modales para registrar acuse de recibo -->
+{% for ficha in fichas %}
+<div class="modal fade" id="modalAcuse{{ ficha.id }}" tabindex="-1" role="dialog" aria-labelledby="modalAcuseLabel{{ ficha.id }}" aria-hidden="true">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title" id="modalAcuseLabel{{ ficha.id }}">
+                    📋 Registrar Acuse de Recibo - Ficha #{{ '%07d' % ficha.numero_ficha }}
+                </h5>
+                <button type="button" class="close text-white" data-dismiss="modal" aria-label="Close">
+                    <span aria-hidden="true">&times;</span>
+                </button>
+            </div>
+            <form method="POST" action="{{ url_for('dml_registrar_acuse', id=ficha.id) }}">
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <strong>Cliente:</strong> {{ ficha.cliente }}<br>
+                        <strong>Serie:</strong> {{ ficha.numero_serie }}
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="fecha_entrega{{ ficha.id }}">Fecha de Entrega *</label>
+                        <input type="date" class="form-control" id="fecha_entrega{{ ficha.id }}" name="fecha_entrega_cliente" 
+                               value="{{ ficha.fecha_entrega_cliente or '' }}" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="recibido_por{{ ficha.id }}">Recibido Por (Nombre) *</label>
+                        <input type="text" class="form-control" id="recibido_por{{ ficha.id }}" name="recibido_por" 
+                               placeholder="Nombre de quien recibe la máquina" required>
+                        <small class="form-text text-muted">Nombre completo de la persona que recibe la máquina</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="observaciones_entrega{{ ficha.id }}">Observaciones de Entrega</label>
+                        <textarea class="form-control" id="observaciones_entrega{{ ficha.id }}" name="observaciones_entrega" 
+                                  rows="3" placeholder="Condiciones de entrega, documentos firmados, etc."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="fas fa-check"></i> Registrar Acuse
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endfor %}
+
+{% endblock %}

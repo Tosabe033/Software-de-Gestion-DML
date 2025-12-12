@@ -19,7 +19,7 @@ import json
 
 from flask import (
     Flask, g, render_template, request, redirect,
-    url_for, session, flash, send_file, jsonify
+    url_for, session, flash, send_file, jsonify, make_response
 )
 
 load_dotenv()
@@ -183,6 +183,103 @@ def migrate_db():
         print("[MIGRATIONS] Completadas exitosamente")
     except Exception as e:
         print(f"Error en migraciones: {e}")
+        db.commit()
+    
+    # Migración: Agregar campos contacto_cliente y email_cliente a raypac_entries
+    try:
+        print("[MIGRATION] Verificando campos contacto_cliente y email_cliente...")
+        
+        # Verificar si las columnas ya existen
+        columns = db.execute("PRAGMA table_info(raypac_entries)").fetchall()
+        column_names = [col['name'] for col in columns]
+        
+        if 'contacto_cliente' not in column_names:
+            db.execute("ALTER TABLE raypac_entries ADD COLUMN contacto_cliente TEXT")
+            print("[MIGRATION] ✅ Columna contacto_cliente agregada")
+        
+        if 'email_cliente' not in column_names:
+            db.execute("ALTER TABLE raypac_entries ADD COLUMN email_cliente TEXT")
+            print("[MIGRATION] ✅ Columna email_cliente agregada")
+        
+        db.commit()
+        print("[MIGRATION] ✅ Campos de contacto cliente verificados")
+        
+    except Exception as e:
+        print(f"[MIGRATION] ⚠️  Error agregando campos de contacto: {e}")
+        db.commit()
+    
+    # Migración: Agregar campos de acuse de recibo a dml_fichas
+    try:
+        print("[MIGRATION] Verificando campos de acuse de recibo...")
+        
+        columns = db.execute("PRAGMA table_info(dml_fichas)").fetchall()
+        column_names = [col['name'] for col in columns]
+        
+        if 'fecha_entrega_cliente' not in column_names:
+            db.execute("ALTER TABLE dml_fichas ADD COLUMN fecha_entrega_cliente TEXT")
+            print("[MIGRATION] ✅ Columna fecha_entrega_cliente agregada")
+        
+        if 'recibido_por' not in column_names:
+            db.execute("ALTER TABLE dml_fichas ADD COLUMN recibido_por TEXT")
+            print("[MIGRATION] ✅ Columna recibido_por agregada")
+        
+        db.commit()
+        print("[MIGRATION] ✅ Campos de acuse de recibo verificados")
+        
+    except Exception as e:
+        print(f"[MIGRATION] ⚠️  Error agregando campos de acuse: {e}")
+        db.commit()
+    
+    # Migración: Rediseñar flujo Ticket → Ficha
+    try:
+        print("[MIGRATION] Rediseñando flujo Ticket → Ficha...")
+        
+        # Verificar si raypac_id existe en tickets
+        columns = db.execute("PRAGMA table_info(tickets)").fetchall()
+        column_names = [col['name'] for col in columns]
+        
+        if 'raypac_id' not in column_names:
+            db.execute("ALTER TABLE tickets ADD COLUMN raypac_id INTEGER REFERENCES raypac_entries(id)")
+            print("[MIGRATION] ✅ Columna raypac_id agregada a tickets")
+        
+        # Verificar si ticket_id existe en dml_fichas
+        columns = db.execute("PRAGMA table_info(dml_fichas)").fetchall()
+        column_names = [col['name'] for col in columns]
+        
+        if 'ticket_id' not in column_names:
+            db.execute("ALTER TABLE dml_fichas ADD COLUMN ticket_id INTEGER REFERENCES tickets(id)")
+            print("[MIGRATION] ✅ Columna ticket_id agregada a dml_fichas")
+        
+        # Nota: ficha_id en tickets ya existe pero ahora será opcional (no se puede modificar constraint en SQLite)
+        # Los tickets nuevos tendrán ficha_id = NULL hasta que se cree la ficha
+        
+        db.commit()
+        print("[MIGRATION] ✅ Flujo Ticket → Ficha configurado")
+        
+    except Exception as e:
+        print(f"[MIGRATION] ⚠️  Error en migración de flujo: {e}")
+        db.commit()
+    
+    # Migración: Agregar tipo_entrega a envios_repuestos
+    try:
+        print("[MIGRATION] Verificando campo tipo_entrega en envios_repuestos...")
+        
+        columns = db.execute("PRAGMA table_info(envios_repuestos)").fetchall()
+        column_names = [col['name'] for col in columns]
+        
+        if 'tipo_entrega' not in column_names:
+            db.execute("ALTER TABLE envios_repuestos ADD COLUMN tipo_entrega TEXT DEFAULT 'REPUESTOS'")
+            print("[MIGRATION] ✅ Columna tipo_entrega agregada a envios_repuestos")
+        
+        db.commit()
+        print("[MIGRATION] ✅ Campo tipo_entrega verificado")
+        
+    except Exception as e:
+        print(f"[MIGRATION] ⚠️  Error agregando tipo_entrega: {e}")
+        db.commit()
+    
+    except Exception as e:
+        print(f"[MIGRATION] ⚠️  Error agregando campos de acuse: {e}")
         db.commit()
     
     # Migración de hashes de contraseñas (actualización automática)
@@ -556,12 +653,9 @@ def generate_ficha_number():
     return (last['max'] or 500) + 1
 
 def generate_ticket_number(serial):
-    """Genera número de ticket basado en número de serie."""
-    db = get_db()
-    year = datetime.now().year
-    count = db.execute("SELECT COUNT(*) as total FROM dml_fichas WHERE strftime('%Y', created_at) = ?", (str(year),)).fetchone()
-    ticket_num = count['total'] + 1
-    return f"TK-{year}-{serial.upper()}-{ticket_num:05d}"
+    """Genera número de ticket basado en número de serie: TK-{serie}."""
+    # Nuevo formato simplificado: TK-{serie}
+    return f"TK-{serial.upper()}"
 
 def generate_remito_raypac():
     """Genera un número de remito RP-YYYY-00001 correlativo para envíos a ST."""
@@ -1131,12 +1225,24 @@ def raypac_list(readonly=False):
     entries = db.execute("""
         SELECT r.*, 
                (SELECT COUNT(*) FROM dml_fichas f WHERE f.raypac_id = r.id) AS fichas_count,
-               (SELECT f.id FROM dml_fichas f WHERE f.raypac_id = r.id ORDER BY f.created_at DESC LIMIT 1) AS ficha_id
+               (SELECT f.id FROM dml_fichas f WHERE f.raypac_id = r.id ORDER BY f.created_at DESC LIMIT 1) AS ficha_id,
+               (SELECT f.estado_reparacion FROM dml_fichas f WHERE f.raypac_id = r.id ORDER BY f.created_at DESC LIMIT 1) AS estado_ficha,
+               (SELECT t.id FROM tickets t WHERE t.raypac_id = r.id ORDER BY t.created_at DESC LIMIT 1) AS ticket_id,
+               (SELECT t.numero_ticket FROM tickets t WHERE t.raypac_id = r.id ORDER BY t.created_at DESC LIMIT 1) AS ticket_numero
         FROM raypac_entries r
         ORDER BY r.created_at DESC
     """).fetchall()
     
-    return render_template("raypac_list.html", entries=entries, user_role=user['role'], readonly=readonly)
+    # Configuración de badges para estados de fichas DML
+    estado_config = {
+        "REVISION_INICIAL": {"color": "#17a2b8", "texto": "Revisión Inicial"},
+        "EN_REPARACION": {"color": "#ffc107", "texto": "En Reparación"},
+        "PAUSADA": {"color": "#fd7e14", "texto": "Pausada"},
+        "FINALIZADA": {"color": "#28a745", "texto": "Finalizada"},
+        "ENTREGADA": {"color": "#6c757d", "texto": "Entregada"}
+    }
+    
+    return render_template("raypac_list.html", entries=entries, user_role=user['role'], readonly=readonly, estado_config=estado_config)
 
 @app.route("/raypac/new", methods=["GET", "POST"])
 @login_required
@@ -1158,6 +1264,8 @@ def raypac_new():
             diagnostico = request.form.get("diagnostico_ingreso")
             comercial = request.form.get("comercial")
             mail_comercial = request.form.get("mail_comercial")
+            contacto_cliente = request.form.get("contacto_cliente")
+            email_cliente = request.form.get("email_cliente")
             
             # Validación básica
             if not all([tipo_solicitud, cliente, numero_serie, modelo, tipo_maquina, comercial, mail_comercial]):
@@ -1176,10 +1284,10 @@ def raypac_new():
             db.execute("""
                 INSERT INTO raypac_entries 
                 (numero_correlativo, fecha_recepcion, tipo_solicitud, cliente, numero_serie, modelo_maquina, tipo_maquina,
-                 numero_bateria, numero_cargador, diagnostico_ingreso, comercial, mail_comercial)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                 numero_bateria, numero_cargador, diagnostico_ingreso, comercial, mail_comercial, contacto_cliente, email_cliente)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
             """, (correlativo, fecha, tipo_solicitud, cliente, numero_serie, modelo, tipo_maquina,
-                  numero_bateria, numero_cargador, diagnostico, comercial, mail_comercial))
+                  numero_bateria, numero_cargador, diagnostico, comercial, mail_comercial, contacto_cliente, email_cliente))
             db.commit()
             
             raypac_id = db.execute("SELECT last_insert_rowid() as id").fetchone()['id']
@@ -1238,13 +1346,15 @@ def raypac_edit(id):
             diagnostico = request.form.get("diagnostico_ingreso")
             comercial = request.form.get("comercial")
             mail_comercial = request.form.get("mail_comercial")
+            contacto_cliente = request.form.get("contacto_cliente")
+            email_cliente = request.form.get("email_cliente")
             
             db.execute("""
                 UPDATE raypac_entries 
                 SET fecha_recepcion=?, tipo_solicitud=?, cliente=?, numero_serie=?,
-                    diagnostico_ingreso=?, comercial=?, mail_comercial=?, updated_at=CURRENT_TIMESTAMP
+                    diagnostico_ingreso=?, comercial=?, mail_comercial=?, contacto_cliente=?, email_cliente=?, updated_at=CURRENT_TIMESTAMP
                 WHERE id = ?
-            """, (fecha, tipo_solicitud, cliente, numero_serie, diagnostico, comercial, mail_comercial, id))
+            """, (fecha, tipo_solicitud, cliente, numero_serie, diagnostico, comercial, mail_comercial, contacto_cliente, email_cliente, id))
             db.commit()
             
             log_action(user['id'], "UPDATE", "raypac_entries", id, None, 
@@ -1308,9 +1418,9 @@ def raypac_freeze(id):
 
 @app.route("/raypac/<int:id>/unfreeze", methods=["POST"])
 @login_required
-@role_required("ADMIN", "RAYPAC")
+@role_required("ADMIN")  # RESTRICCIÓN: Solo ADMIN puede desfreezar
 def raypac_unfreeze(id):
-    """Descongelar un ingreso RAYPAC con código"""
+    """Descongelar un ingreso RAYPAC con código (solo ADMIN)"""
     user = get_current_user()
     db = get_db()
     entry = db.execute("SELECT * FROM raypac_entries WHERE id = ?", (id,)).fetchone()
@@ -1366,6 +1476,112 @@ def dml_list(readonly=False):
     
     return render_template("dml_list.html", fichas=fichas, user_role=user['role'], readonly=readonly)
 
+@app.route("/dml/entregadas")
+@login_required
+@role_required("ADMIN", "DML_ST", "RAYPAC")
+def dml_entregadas():
+    user = get_current_user()
+    db = get_db()
+    fichas = db.execute("""
+        SELECT f.*, r.cliente, r.numero_serie, r.contacto_cliente, r.email_cliente
+        FROM dml_fichas f
+        LEFT JOIN raypac_entries r ON f.raypac_id = r.id
+        WHERE f.estado_reparacion = 'ENTREGADA'
+        ORDER BY f.fecha_entrega_cliente DESC, f.updated_at DESC
+    """).fetchall()
+    
+    return render_template("dml_entregadas.html", fichas=fichas, user_role=user['role'])
+
+@app.route("/tickets/nuevo/<int:raypac_id>", methods=["GET", "POST"])
+@login_required
+@role_required("ADMIN", "DML_ST", "RAYPAC")
+def ticket_nuevo(raypac_id):
+    """Crear ticket inicial desde RAYPAC freezado (nuevo flujo)."""
+    user = get_current_user()
+    db = get_db()
+    
+    raypac = db.execute("SELECT * FROM raypac_entries WHERE id = ?", (raypac_id,)).fetchone()
+    if not raypac:
+        flash("Ingreso RAYPAC no encontrado.", "error")
+        return redirect(url_for("raypac_list"))
+    
+    if not raypac['is_frozen']:
+        flash("El ingreso RAYPAC debe estar freezado para crear un ticket.", "error")
+        return redirect(url_for("raypac_view", id=raypac_id))
+    
+    # Verificar si ya existe ticket para este RAYPAC
+    ticket_existente = db.execute(
+        "SELECT * FROM tickets WHERE raypac_id = ?", (raypac_id,)
+    ).fetchone()
+    
+    if ticket_existente:
+        flash(f"Ya existe un ticket para este ingreso: {ticket_existente['numero_ticket']}", "info")
+        return redirect(url_for("ticket_view", numero_ticket=ticket_existente['numero_ticket']))
+    
+    if request.method == "POST":
+        try:
+            # Generar número de ticket: TK-{serie}
+            numero_ticket = generate_ticket_number(raypac['numero_serie'])
+            
+            # Crear ticket sin ficha_id (será NULL hasta que se cree la ficha)
+            db.execute("""
+                INSERT INTO tickets 
+                (numero_ticket, raypac_id, numero_serie, estado, ficha_id)
+                VALUES (?, ?, ?, 'ACTIVO', NULL)
+            """, (numero_ticket, raypac_id, raypac['numero_serie']))
+            
+            db.commit()
+            
+            ticket_id = db.execute("SELECT last_insert_rowid() as id").fetchone()['id']
+            
+            log_action(user['id'], "CREATE", "tickets", ticket_id, None, 
+                      f"Ticket inicial creado: {numero_ticket}")
+            
+            # Enviar email al comercial con el ticket
+            if raypac['mail_comercial']:
+                html_body = f"""
+                <html>
+                <head><style>
+                    body {{ font-family: Arial, sans-serif; background-color: #f5f5f5; }}
+                    .email-container {{ max-width: 600px; margin: 0 auto; background-color: white; padding: 20px; border-radius: 8px; }}
+                    .header {{ background: linear-gradient(135deg, #2c3e50 0%, #34495e 100%); color: white; padding: 20px; border-radius: 5px; text-align: center; }}
+                    .ticket-box {{ border: 3px solid #2c3e50; padding: 20px; margin: 20px 0; border-radius: 8px; background-color: #ecf0f1; }}
+                    .ticket-num {{ font-size: 32px; font-weight: bold; color: #e74c3c; text-align: center; margin: 10px 0; }}
+                    .info-row {{ margin: 8px 0; padding: 5px 0; border-bottom: 1px solid #bdc3c7; }}
+                    .label {{ font-weight: bold; color: #2c3e50; }}
+                </style></head>
+                <body>
+                <div class="email-container">
+                    <div class="header">
+                        <h1>🎫 TICKET DE SEGUIMIENTO CREADO</h1>
+                    </div>
+                    <p>Estimado {raypac['comercial']},</p>
+                    <p>Se ha generado un ticket de seguimiento para el equipo recibido:</p>
+                    <div class="ticket-box">
+                        <div class="ticket-num">{numero_ticket}</div>
+                        <div class="info-row"><span class="label">Cliente:</span> {raypac['cliente']}</div>
+                        <div class="info-row"><span class="label">Número de Serie:</span> {raypac['numero_serie']}</div>
+                        <div class="info-row"><span class="label">Modelo:</span> {raypac['modelo_maquina']}</div>
+                        <div class="info-row"><span class="label">Estado:</span> Pendiente de Revisión</div>
+                    </div>
+                    <p>Utilice este número de ticket para hacer seguimiento del estado de su equipo.</p>
+                    <p style="color: #7f8c8d; font-size: 12px; text-align: center; margin-top: 20px;">DML Electricidad Industrial SRL - Servicio Técnico</p>
+                </div>
+                </body>
+                </html>
+                """
+                send_mail(raypac['mail_comercial'], 
+                         f"🎫 Ticket de Seguimiento: {numero_ticket}",
+                         html_body)
+            
+            flash(f"✅ Ticket {numero_ticket} creado exitosamente.", "success")
+            return redirect(url_for("ticket_view", numero_ticket=numero_ticket))
+            
+        except Exception as e:
+            flash(f"Error al crear ticket: {str(e)}", "error")
+    
+    return render_template("ticket_nuevo.html", raypac=raypac)
+
 @app.route("/dml/new/<int:raypac_id>", methods=["GET", "POST"])
 @login_required
 @role_required("ADMIN", "DML_ST")
@@ -1378,6 +1594,9 @@ def dml_new(raypac_id):
         flash("Ingreso RAYPAC no encontrado.", "error")
         return redirect(url_for("raypac_list"))
     
+    # Buscar si existe un ticket asociado a este RAYPAC (nuevo flujo)
+    ticket = db.execute("SELECT * FROM tickets WHERE raypac_id = ? AND ficha_id IS NULL", (raypac_id,)).fetchone()
+    
     if request.method == "POST":
         try:
             fecha_ingreso = request.form.get("fecha_ingreso") or datetime.now().strftime("%Y-%m-%d")
@@ -1389,24 +1608,44 @@ def dml_new(raypac_id):
             
             if not all([tecnico, tecnico_resp]):
                 flash("Completa los campos obligatorios.", "error")
-                return render_template("dml_form.html", raypac=raypac)
+                return render_template("dml_form.html", raypac=raypac, ticket=ticket)
             
             numero_ficha = generate_ficha_number()
             
-            db.execute("""
-                INSERT INTO dml_fichas 
-                (numero_ficha, raypac_id, fecha_ingreso, tecnico,
-                 observaciones, n_ciclos, tecnico_resp,
-                 estado_reparacion)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            """, (numero_ficha, raypac_id, fecha_ingreso, tecnico,
-                  observaciones, n_ciclos, tecnico_resp, 'A LA ESPERA DE REVISIÓN'))
+            # Si existe ticket, asociar la ficha con él
+            if ticket:
+                db.execute("""
+                    INSERT INTO dml_fichas 
+                    (numero_ficha, raypac_id, ticket_id, numero_ticket, fecha_ingreso, tecnico,
+                     observaciones, n_ciclos, tecnico_resp,
+                     estado_reparacion)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, (numero_ficha, raypac_id, ticket['id'], ticket['numero_ticket'], fecha_ingreso, tecnico,
+                      observaciones, n_ciclos, tecnico_resp, 'REVISION_INICIAL'))
+                
+                ficha_id = db.execute("SELECT last_insert_rowid() as id").fetchone()['id']
+                
+                # Actualizar ticket con el ficha_id
+                db.execute("UPDATE tickets SET ficha_id = ? WHERE id = ?", (ficha_id, ticket['id']))
+                
+                numero_ticket = ticket['numero_ticket']
+            else:
+                # Flujo antiguo: crear ficha sin ticket previo
+                db.execute("""
+                    INSERT INTO dml_fichas 
+                    (numero_ficha, raypac_id, fecha_ingreso, tecnico,
+                     observaciones, n_ciclos, tecnico_resp,
+                     estado_reparacion)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                """, (numero_ficha, raypac_id, fecha_ingreso, tecnico,
+                      observaciones, n_ciclos, tecnico_resp, 'REVISION_INICIAL'))
+                
+                ficha_id = db.execute("SELECT last_insert_rowid() as id").fetchone()['id']
+                
+                # Crear ticket después (flujo antiguo)
+                numero_ticket = crear_ticket(ficha_id, raypac['numero_serie'])
+            
             db.commit()
-            
-            ficha_id = db.execute("SELECT last_insert_rowid() as id").fetchone()['id']
-            
-            # Crear ticket de seguimiento inmediato para que la ficha ya quede enlazada
-            numero_ticket = crear_ticket(ficha_id, raypac['numero_serie'])
             
             # Crear partes estándar
             partes = [
@@ -1422,16 +1661,16 @@ def dml_new(raypac_id):
             db.commit()
             
             log_action(user['id'], "CREATE", "dml_fichas", ficha_id, None,
-                      f"Ficha DML #{numero_ficha}")
+                      f"Ficha DML #{numero_ficha} - Ticket: {numero_ticket}")
             
             # CAMBIO DAVID: Redirigir directamente a EDICIÓN en lugar de vista
             flash(f"Ficha #{numero_ficha} creada correctamente. Ticket: {numero_ticket}", "success")
             return redirect(url_for("dml_edit", id=ficha_id))
         except Exception as e:
             flash(f"Error: {str(e)}", "error")
-            return render_template("dml_form.html", raypac=raypac)
+            return render_template("dml_form.html", raypac=raypac, ticket=ticket)
     
-    return render_template("dml_form.html", raypac=raypac)
+    return render_template("dml_form.html", raypac=raypac, ticket=ticket)
 
 @app.route("/dml/<int:id>")
 @login_required
@@ -1889,17 +2128,43 @@ def dml_close(id):
         flash("Esta ficha ya está cerrada.", "info")
         return redirect(url_for("dml_view", id=id))
     
-    # Validar que exista remito de salida
+    # VALIDACIONES OBLIGATORIAS antes de cerrar
+    errores = []
+    
+    # 1. Validar remito de salida
     if not ficha['numero_remito_salida']:
-        flash("⚠️ No se puede cerrar la ficha sin número de remito de salida. Por favor, edita la ficha y agrega el remito.", "error")
-        return redirect(url_for("dml_view", id=id))
+        errores.append("Número de remito de salida")
+    
+    # 2. Validar diagnóstico de reparación
+    if not ficha['diagnostico_reparacion'] or len(ficha['diagnostico_reparacion'].strip()) < 10:
+        errores.append("Diagnóstico de reparación (mínimo 10 caracteres)")
+    
+    # 3. Validar técnico responsable
+    if not ficha['tecnico_resp']:
+        errores.append("Técnico responsable")
+    
+    # 4. Validar que tenga al menos un repuesto registrado o partes inspeccionadas
+    repuestos_count = db.execute("SELECT COUNT(*) as cnt FROM dml_repuestos WHERE ficha_id = ?", (id,)).fetchone()['cnt']
+    partes_inspeccionadas = db.execute(
+        "SELECT COUNT(*) as cnt FROM dml_partes WHERE ficha_id = ? AND estado != 'POR INSPECCIONAR'", 
+        (id,)
+    ).fetchone()['cnt']
+    
+    if repuestos_count == 0 and partes_inspeccionadas == 0:
+        errores.append("Debe inspeccionar al menos una parte o agregar repuestos utilizados")
+    
+    if errores:
+        flash(f"⚠️ No se puede cerrar la ficha. Campos requeridos faltantes:", "error")
+        for error in errores:
+            flash(f"• {error}", "error")
+        return redirect(url_for("dml_edit", id=id))
     
     try:
-        # Cerrar la ficha
+        # Cerrar la ficha y marcar como ENTREGADA
         fecha_egreso = datetime.now().strftime("%Y-%m-%d")
         db.execute("""
             UPDATE dml_fichas 
-            SET is_closed = 1, fecha_egreso = ?, estado_reparacion = 'FINALIZADO'
+            SET is_closed = 1, fecha_egreso = ?, estado_reparacion = 'ENTREGADA'
             WHERE id = ?
         """, (fecha_egreso, id))
         
@@ -1970,7 +2235,57 @@ def dml_close(id):
         log_action(user['id'], "CLOSE", "dml_fichas", id, None, 
                   f"Ficha finalizada - Notificación {mail_status} - Comercial: {raypac['comercial'] if raypac else 'N/A'}")
         
-        flash(f"✅ Ficha #{ficha['numero_ficha']} finalizada. Notificación {mail_status}.", "success")
+        flash(f"✅ Ficha #{ficha['numero_ficha']} cerrada y marcada como ENTREGADA. Notificación {mail_status}.", "success")
+        return redirect(url_for("dml_view", id=id))
+    except Exception as e:
+        flash(f"Error al cerrar ficha: {str(e)}", "error")
+        return redirect(url_for("dml_view", id=id))
+
+@app.route("/dml/<int:id>/acuse", methods=["POST"])
+@login_required
+@role_required("ADMIN", "DML_ST", "RAYPAC")
+def dml_registrar_acuse(id):
+    """Registra el acuse de recibo de una máquina entregada."""
+    user = get_current_user()
+    db = get_db()
+    
+    ficha = db.execute("SELECT * FROM dml_fichas WHERE id = ?", (id,)).fetchone()
+    if not ficha:
+        flash("Ficha no encontrada.", "error")
+        return redirect(url_for("dml_entregadas"))
+    
+    if ficha['estado_reparacion'] != 'ENTREGADA':
+        flash("Solo se puede registrar acuse de fichas marcadas como ENTREGADA.", "error")
+        return redirect(url_for("dml_view", id=id))
+    
+    try:
+        fecha_entrega = request.form.get("fecha_entrega_cliente")
+        recibido_por = request.form.get("recibido_por", "").strip()
+        observaciones = request.form.get("observaciones_entrega", "").strip()
+        
+        if not fecha_entrega or not recibido_por:
+            flash("La fecha de entrega y el nombre de quien recibe son obligatorios.", "error")
+            return redirect(url_for("dml_entregadas"))
+        
+        # Actualizar acuse de recibo
+        db.execute("""
+            UPDATE dml_fichas 
+            SET fecha_entrega_cliente = ?, recibido_por = ?, 
+                observaciones = CASE 
+                    WHEN observaciones IS NOT NULL AND observaciones != '' 
+                    THEN observaciones || ' | ENTREGA: ' || ?
+                    ELSE 'ENTREGA: ' || ?
+                END,
+                updated_at = CURRENT_TIMESTAMP
+            WHERE id = ?
+        """, (fecha_entrega, recibido_por, observaciones, observaciones, id))
+        
+        db.commit()
+        
+        log_action(user['id'], "UPDATE", "dml_fichas", id, None, 
+                  f"Acuse de recibo registrado - Recibido por: {recibido_por}")
+        
+        flash(f"✅ Acuse de recibo registrado correctamente para Ficha #{ficha['numero_ficha']}.", "success")
         
     except Exception as e:
         flash(f"Error al cerrar ficha: {str(e)}", "error")
@@ -2088,6 +2403,9 @@ def envios_new():
 
     if request.method == "POST":
         try:
+            # Tipo de entrega
+            tipo_entrega = request.form.get("tipo_entrega", "REPUESTOS")
+            
             # OBLIGATORIO: Número de remito manual
             numero_remito_input = (request.form.get("numero_remito") or "").strip()
             
@@ -2134,8 +2452,8 @@ def envios_new():
             fecha_envio = datetime.now().strftime("%Y-%m-%d")
 
             db.execute(
-                "INSERT INTO envios_repuestos (numero_remito, fecha_envio) VALUES (?, ?)",
-                (numero_remito, fecha_envio)
+                "INSERT INTO envios_repuestos (numero_remito, fecha_envio, tipo_entrega) VALUES (?, ?, ?)",
+                (numero_remito, fecha_envio, tipo_entrega)
             )
             envio_id = db.execute("SELECT last_insert_rowid() as id").fetchone()['id']
 
@@ -3178,6 +3496,137 @@ def estadisticas(readonly=False):
         ubicaciones_disponibles=ubicaciones_disponibles,
         readonly=readonly
     )
+
+# ======================== EXPORTACIONES CSV ========================
+
+@app.route("/export/fichas-csv")
+@login_required
+@role_required("ADMIN", "DML_ST")
+def export_fichas_csv():
+    """Exportar fichas DML a CSV"""
+    import csv
+    from io import StringIO
+    
+    db = get_db()
+    fichas = db.execute("""
+        SELECT f.numero_ficha, f.fecha_ingreso, f.fecha_egreso, f.estado_reparacion,
+               f.tecnico, f.tecnico_resp, f.n_ciclos, f.numero_remito_salida,
+               r.cliente, r.numero_serie, r.modelo_maquina
+        FROM dml_fichas f
+        LEFT JOIN raypac_entries r ON f.raypac_id = r.id
+        ORDER BY f.created_at DESC
+    """).fetchall()
+    
+    # Crear CSV en memoria
+    si = StringIO()
+    writer = csv.writer(si)
+    
+    # Header
+    writer.writerow([
+        'N° Ficha', 'Cliente', 'Serie', 'Modelo', 'Estado',
+        'Fecha Ingreso', 'Fecha Egreso', 'Técnico', 'Responsable',
+        'N° Ciclos', 'Remito Salida'
+    ])
+    
+    # Datos
+    for f in fichas:
+        writer.writerow([
+            f['numero_ficha'], f['cliente'], f['numero_serie'], f['modelo_maquina'],
+            f['estado_reparacion'], f['fecha_ingreso'], f['fecha_egreso'] or '',
+            f['tecnico'], f['tecnico_resp'], f['n_ciclos'], f['numero_remito_salida'] or ''
+        ])
+    
+    # Preparar respuesta
+    output = make_response(si.getvalue())
+    output.headers["Content-Disposition"] = f"attachment; filename=fichas_dml_{datetime.now().strftime('%Y%m%d')}.csv"
+    output.headers["Content-type"] = "text/csv; charset=utf-8"
+    
+    return output
+
+@app.route("/export/stock-csv")
+@login_required
+@role_required("ADMIN", "DML_REPUESTOS", "RAYPAC")
+def export_stock_csv():
+    """Exportar stock a CSV"""
+    import csv
+    from io import StringIO
+    
+    db = get_db()
+    stock = db.execute("""
+        SELECT m.codigo_repuesto, m.item,
+               COALESCE(su_dml.cantidad, 0) as stock_dml,
+               COALESCE(su_raypac.cantidad, 0) as stock_raypac,
+               (COALESCE(su_dml.cantidad, 0) + COALESCE(su_raypac.cantidad, 0)) as stock_total
+        FROM matriz_repuestos m
+        LEFT JOIN stock_ubicaciones su_dml ON su_dml.codigo_repuesto = m.codigo_repuesto AND su_dml.ubicacion = 'DML'
+        LEFT JOIN stock_ubicaciones su_raypac ON su_raypac.codigo_repuesto = m.codigo_repuesto AND su_raypac.ubicacion = 'RAYPAC'
+        ORDER BY m.codigo_repuesto
+    """).fetchall()
+    
+    # Crear CSV en memoria
+    si = StringIO()
+    writer = csv.writer(si)
+    
+    # Header
+    writer.writerow(['Código', 'Descripción', 'Stock DML', 'Stock RAYPAC', 'Stock Total'])
+    
+    # Datos
+    for s in stock:
+        writer.writerow([
+            s['codigo_repuesto'], s['item'], s['stock_dml'],
+            s['stock_raypac'], s['stock_total']
+        ])
+    
+    # Preparar respuesta
+    output = make_response(si.getvalue())
+    output.headers["Content-Disposition"] = f"attachment; filename=stock_{datetime.now().strftime('%Y%m%d')}.csv"
+    output.headers["Content-type"] = "text/csv; charset=utf-8"
+    
+    return output
+
+@app.route("/export/raypac-csv")
+@login_required
+@role_required("ADMIN", "RAYPAC")
+def export_raypac_csv():
+    """Exportar ingresos RAYPAC a CSV"""
+    import csv
+    from io import StringIO
+    
+    db = get_db()
+    entries = db.execute("""
+        SELECT r.numero_correlativo, r.fecha_recepcion, r.tipo_solicitud, r.cliente,
+               r.numero_serie, r.modelo_maquina, r.comercial, r.numero_remito,
+               r.is_frozen, r.contacto_cliente, r.email_cliente
+        FROM raypac_entries r
+        ORDER BY r.created_at DESC
+    """).fetchall()
+    
+    # Crear CSV en memoria
+    si = StringIO()
+    writer = csv.writer(si)
+    
+    # Header
+    writer.writerow([
+        'N° Correlativo', 'Fecha Recepción', 'Tipo', 'Cliente', 'Serie',
+        'Modelo', 'Comercial', 'Remito', 'Estado', 'Contacto', 'Email'
+    ])
+    
+    # Datos
+    for e in entries:
+        estado = 'Freezado' if e['is_frozen'] else 'Editable'
+        writer.writerow([
+            e['numero_correlativo'], e['fecha_recepcion'], e['tipo_solicitud'],
+            e['cliente'], e['numero_serie'], e['modelo_maquina'], e['comercial'],
+            e['numero_remito'] or '', estado, e['contacto_cliente'] or '',
+            e['email_cliente'] or ''
+        ])
+    
+    # Preparar respuesta
+    output = make_response(si.getvalue())
+    output.headers["Content-Disposition"] = f"attachment; filename=raypac_{datetime.now().strftime('%Y%m%d')}.csv"
+    output.headers["Content-type"] = "text/csv; charset=utf-8"
+    
+    return output
 
 # ======================== MAIN ========================
 

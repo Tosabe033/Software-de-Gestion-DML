@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+
+{% block title %}Crear Ticket de Seguimiento{% endblock %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="card shadow-lg">
+        <div class="card-header bg-primary text-white">
+            <h3><i class="bi bi-ticket-perforated-fill"></i> Crear Ticket de Seguimiento</h3>
+            <p class="mb-0">Paso 1: Generar ticket de seguimiento para el cliente</p>
+        </div>
+        <div class="card-body">
+            <div class="alert alert-info">
+                <strong><i class="bi bi-info-circle"></i> Nuevo Flujo de Trabajo:</strong>
+                <ol class="mb-0 mt-2">
+                    <li>Crear <strong>Ticket</strong> para seguimiento del cliente (este paso)</li>
+                    <li>Luego, crear <strong>Ficha DML</strong> para iniciar la reparación</li>
+                </ol>
+            </div>
+
+            <div class="card mb-4">
+                <div class="card-header bg-light">
+                    <h5>Información del Ingreso RAYPAC</h5>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <p><strong>Cliente:</strong> {{ raypac.cliente }}</p>
+                            <p><strong>Número de Serie:</strong> <code class="fs-5">{{ raypac.numero_serie }}</code></p>
+                            <p><strong>Modelo:</strong> {{ raypac.modelo_maquina }}</p>
+                        </div>
+                        <div class="col-md-6">
+                            <p><strong>Tipo de Máquina:</strong> {{ raypac.tipo_maquina }}</p>
+                            <p><strong>Comercial:</strong> {{ raypac.comercial }}</p>
+                            <p><strong>Email Comercial:</strong> {{ raypac.mail_comercial }}</p>
+                        </div>
+                    </div>
+                    <div class="alert alert-warning mt-3">
+                        <strong>Diagnóstico de Ingreso:</strong><br>
+                        {{ raypac.diagnostico_ingreso or "Sin diagnóstico especificado" }}
+                    </div>
+                </div>
+            </div>
+
+            <div class="card mb-4 border-primary">
+                <div class="card-header bg-primary text-white">
+                    <h5><i class="bi bi-ticket"></i> Ticket a Generar</h5>
+                </div>
+                <div class="card-body text-center">
+                    <h2 class="text-primary mb-3">
+                        <i class="bi bi-ticket-detailed-fill"></i> TK-{{ raypac.numero_serie }}
+                    </h2>
+                    <p class="text-muted">Este número de ticket será enviado al comercial para seguimiento</p>
+                </div>
+            </div>
+
+            <form method="POST">
+                <div class="alert alert-success">
+                    <h5><i class="bi bi-check-circle"></i> Confirmación</h5>
+                    <p class="mb-0">
+                        Al confirmar se creará el ticket <strong>TK-{{ raypac.numero_serie }}</strong> y se enviará
+                        un email de notificación a <strong>{{ raypac.mail_comercial }}</strong>.
+                    </p>
+                </div>
+
+                <div class="d-flex justify-content-between">
+                    <a href="{{ url_for('raypac_view', id=raypac.id) }}" class="btn btn-secondary">
+                        <i class="bi bi-arrow-left"></i> Cancelar
+                    </a>
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="bi bi-ticket-perforated"></i> Crear Ticket
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div class="card mt-4 border-info">
+        <div class="card-header bg-info text-white">
+            <h5><i class="bi bi-lightbulb"></i> ¿Qué sigue después?</h5>
+        </div>
+        <div class="card-body">
+            <p>Una vez creado el ticket:</p>
+            <ul>
+                <li>El comercial recibirá un email con el número de ticket <strong>TK-{{ raypac.numero_serie }}</strong></li>
+                <li>Podrá crear la <strong>Ficha DML</strong> para iniciar el trabajo de reparación</li>
+                <li>El ticket quedará vinculado automáticamente a la ficha</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

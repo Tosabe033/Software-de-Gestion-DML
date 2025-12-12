@@ -1,11 +1,39 @@
 {% extends "base.html" %}
 
 {% block content %}
+<style>
+/* Estilos para impresión - solo mostrar el ticket */
+@media print {
+    /* Ocultar TODA la interfaz excepto el contenido del ticket */
+    body * {
+        visibility: hidden;
+    }
+    .print-area, .print-area * {
+        visibility: visible;
+    }
+    .print-area {
+        position: absolute;
+        left: 0;
+        top: 0;
+        width: 100%;
+    }
+    /* Ocultar botones y navegación al imprimir */
+    .no-print, .btn, button, nav, .navbar, header, footer {
+        display: none !important;
+    }
+    /* Optimizar para impresión en papel */
+    .card {
+        page-break-inside: avoid;
+        border: 1px solid #000 !important;
+    }
+}
+</style>
+
 <div class="container mt-5">
     <div class="row">
         <div class="col-md-12">
-            <!-- BOTONES DE ACCIÓN -->
-            <div style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
+            <!-- BOTONES DE ACCIÓN (NO IMPRIMIR) -->
+            <div class="no-print" style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap;">
                 <a href="{{ url_for('dml_list') }}" class="btn btn-secondary">
                     ⬅️ Volver a Fichas
                 </a>
@@ -13,6 +41,9 @@
                     🖨️ Imprimir Solapa/Etiqueta
                 </a>
             </div>
+
+            <!-- ÁREA DE IMPRESIÓN (SOLO ESTO SE IMPRIME) -->
+            <div class="print-area">
 
             <!-- ENCABEZADO TICKET -->
             <div class="card mb-4" style="border: 3px solid #2c3e50; background: #f8f9fa;">
@@ -101,8 +132,10 @@
             </div>
             {% endif %}
 
-            <!-- BOTONES DE ACCIÓN -->
-            <div class="mt-4 mb-4">
+            </div><!-- Fin print-area -->
+
+            <!-- BOTONES DE ACCIÓN (NO IMPRIMIR) -->
+            <div class="no-print mt-4 mb-4">
                 <a href="{{ url_for('dml_view', id=ticket.ficha_id) }}" class="btn btn-primary">
                     📄 Ver Ficha Completa
                 </a>
@@ -110,12 +143,12 @@
                     🔙 Volver a Tickets
                 </a>
                 <button onclick="window.print()" class="btn btn-info">
-                    🖨️ Imprimir
+                    🖨️ Imprimir Vista Completa
                 </button>
             </div>
 
-            <!-- NOTA DE PIE -->
-            <div class="alert alert-light border text-center mt-4">
+            <!-- NOTA DE PIE (NO IMPRIMIR) -->
+            <div class="alert alert-light border text-center mt-4 no-print">
                 <p class="text-muted mb-0">
                     Número de Ticket: <strong>{{ ticket.numero_ticket }}</strong><br>
                     DML Electricidad Industrial SRL | Servicio Técnico

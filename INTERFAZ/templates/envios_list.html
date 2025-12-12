@@ -14,6 +14,7 @@
     <thead>
       <tr>
         <th>Remito</th>
+        <th>Tipo</th>
         <th>Fecha envío</th>
         <th>Fecha recepción</th>
         <th>Estado</th>
@@ -25,6 +26,13 @@
       {% for envio in envios %}
       <tr>
         <td><strong>{{ envio.numero_remito }}</strong></td>
+        <td>
+          {% if envio.tipo_entrega == 'MAQUINA' %}
+          <span class="badge" style="background-color: #6c757d; color: white;">Máquina</span>
+          {% else %}
+          <span class="badge" style="background-color: #17a2b8; color: white;">Repuestos</span>
+          {% endif %}
+        </td>
         <td>{{ envio.fecha_envio }}</td>
         <td>{{ envio.fecha_recepcion or '-' }}</td>
         <td>
