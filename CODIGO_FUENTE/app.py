@@ -1050,10 +1050,10 @@ def index():
         }
     elif role == "DML_ST":
         stats = {
-            "fichas_en_reparacion": count("SELECT COUNT(*) AS total FROM dml_fichas WHERE estado_reparacion = 'EN REPARACION'"),
+            "fichas_revision_inicial": count("SELECT COUNT(*) AS total FROM dml_fichas WHERE estado_reparacion = 'A LA ESPERA DE REVISIÓN'"),
+            "fichas_en_reparacion": count("SELECT COUNT(*) AS total FROM dml_fichas WHERE estado_reparacion = 'EN REPARACIÓN'"),
             "fichas_espera_repuestos": count("SELECT COUNT(*) AS total FROM dml_fichas WHERE estado_reparacion = 'A LA ESPERA DE REPUESTOS'"),
-            "tickets_activos": count("SELECT COUNT(*) AS total FROM tickets WHERE estado != 'CERRADO'"),
-            "fichas_listas": count("SELECT COUNT(*) AS total FROM dml_fichas WHERE estado_reparacion = 'MAQUINA LISTA PARA RETIRAR'")
+            "fichas_listas": count("SELECT COUNT(*) AS total FROM dml_fichas WHERE estado_reparacion = 'MÁQUINA LISTA PARA RETIRAR'")
         }
     else:  # ADMIN
         stats = {
@@ -1236,13 +1236,23 @@ def raypac_freeze(id):
         return redirect(url_for("raypac_list"))
     
     numero_remito = (request.form.get("numero_remito") or "").strip()
+    
+    # CAMBIO DAVID: Remito OBLIGATORIO con formato 0000-0000
     if not numero_remito:
-        numero_remito = generate_remito_raypac()
-    else:
-        existe = db.execute("SELECT id FROM raypac_entries WHERE numero_remito = ?", (numero_remito,)).fetchone()
-        if existe and existe['id'] != id:
-            flash("El número de remito ya existe.", "error")
-            return redirect(url_for("raypac_view", id=id))
+        flash("⚠️ El número de remito es OBLIGATORIO (formato: 0000-0000).", "error")
+        return redirect(url_for("raypac_view", id=id))
+    
+    # Validar formato 0000-0000 (8 dígitos con guión)
+    import re
+    if not re.match(r'^\d{4}-\d{4}$', numero_remito):
+        flash("⚠️ Formato de remito inválido. Debe ser: 0000-0000 (8 dígitos con guión).", "error")
+        return redirect(url_for("raypac_view", id=id))
+    
+    # Verificar que no exista ya
+    existe = db.execute("SELECT id FROM raypac_entries WHERE numero_remito = ?", (numero_remito,)).fetchone()
+    if existe and existe['id'] != id:
+        flash("El número de remito ya existe.", "error")
+        return redirect(url_for("raypac_view", id=id))
     
     db.execute("""
         UPDATE raypac_entries 
@@ -1276,9 +1286,15 @@ def raypac_unfreeze(id):
     
     unfreeze_code = request.form.get("unfreeze_code", "").strip()
     
-    # Verificar código (usar número de remito como referencia simple)
-    if unfreeze_code != entry['numero_remito']:
-        flash("Código de descongelamiento incorrecto.", "error")
+    # CAMBIO DAVID: Verificar código usando últimos 4 dígitos del remito
+    # Formato remito: 0000-0000, últimos 4 dígitos = "0000" después del guión
+    if entry['numero_remito'] and '-' in entry['numero_remito']:
+        codigo_correcto = entry['numero_remito'].split('-')[-1]  # Últimos 4 dígitos
+    else:
+        codigo_correcto = entry['numero_remito'][-4:] if entry['numero_remito'] else ""
+    
+    if unfreeze_code != codigo_correcto:
+        flash(f"⚠️ Código incorrecto. Use los últimos 4 dígitos del remito ({entry['numero_remito']}).", "error")
         return redirect(url_for("raypac_view", id=id))
     
     db.execute("""
@@ -1290,7 +1306,7 @@ def raypac_unfreeze(id):
     
     log_action(user['id'], "UNFREEZE", "raypac_entries", id, None, "Descongelado")
     
-    flash("Máquina descongelada correctamente.", "success")
+    flash("✅ Máquina descongelada correctamente.", "success")
     return redirect(url_for("raypac_view", id=id))
 
 # ======================== DML - FICHAS ========================
@@ -1369,8 +1385,9 @@ def dml_new(raypac_id):
             log_action(user['id'], "CREATE", "dml_fichas", ficha_id, None,
                       f"Ficha DML #{numero_ficha}")
             
+            # CAMBIO DAVID: Redirigir directamente a EDICIÓN en lugar de vista
             flash(f"Ficha #{numero_ficha} creada correctamente. Ticket: {numero_ticket}", "success")
-            return redirect(url_for("dml_view", id=ficha_id))
+            return redirect(url_for("dml_edit", id=ficha_id))
         except Exception as e:
             flash(f"Error: {str(e)}", "error")
             return render_template("dml_form.html", raypac=raypac)
