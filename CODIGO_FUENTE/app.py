@@ -1269,8 +1269,8 @@ def index():
         stats = {
             "equipos_registrados": count("SELECT COUNT(*) AS total FROM raypac_entries"),
             "equipos_sin_remito": count("SELECT COUNT(*) AS total FROM raypac_entries WHERE numero_remito IS NULL OR numero_remito = ''"),
-            "envios_pendientes": count("SELECT COUNT(*) AS total FROM envios_repuestos WHERE estado = 'PENDIENTE'"),
-            "stock_bajo": count("SELECT COUNT(*) AS total FROM stock_ubicaciones WHERE ubicacion = 'RAYPAC' AND cantidad <= 2")
+            "envios_pendientes": count("SELECT COUNT(*) AS total FROM envios_repuestos WHERE estado_envio = 'ENVIADO'"),
+            "tickets_activos": count("SELECT COUNT(*) AS total FROM tickets WHERE estado = 'ACTIVO'")
         }
     elif role == "DML_REPUESTOS":
         stats = {
