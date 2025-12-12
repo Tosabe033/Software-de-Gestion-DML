@@ -275,9 +275,10 @@ CREATE TABLE freezing_log (
 -- Comentado para evitar duplicados con el CSV completo
 
 -- ======================== USUARIOS INICIALES ========================
+-- Contraseñas: admin/admin, raypac/raypac, st/tecnico, repuestos/repuestos
 
 INSERT INTO users (email, password_hash, nombre, role, is_active) VALUES
-('admin@dml.local', 'scrypt:32768:8:1$C1GodCQmP4TPBzdu$d7431487bc1f7b787ed0a6a8e2bfc23b6126159af237edddc373e56f4ea1b5dc97e1ae17d964bb0d14710740f186b0816d544468e15884da871822071202df5b', 'Administrador', 'ADMIN', 1),
-('raypac@dml.local', 'scrypt:32768:8:1$INW4lIB70TLXFrnH$038473a5723a545f9fb7d5e6bf76b0aa9f6869d925a446c11260b3a7ed5981c271b4c38efc231c5da233d57c4bef761a849a8d0eac082990eb5aed4b47c6d6bf', 'RAYPAC', 'RAYPAC', 1),
-('st@dml.local', 'scrypt:32768:8:1$cnwNhU4tbsxdpC05$2ab29b9d5d811c4557804e9b34553d4942a224fb6815cffc0455863e79800b8d6dc44f17c6f0caaf0eac7d7181a8f4775d7b3af48a8a83e2674dc6d323de046e', 'Servicio Técnico', 'DML_ST', 1),
-('repuestos@dml.local', 'scrypt:32768:8:1$smR33nKhNscjpIS6$27908a73bb88135ad531fca333ff836afb0ff8ec887b2f711aa1997c315d9aad7e7bfa685fd5ab714305934c0889bd9fd078a6350158a7c5811481e6552c26dc', 'Repuestos', 'DML_REPUESTOS', 1);
+('admin@dml.local', 'pbkdf2:sha256:600000$6A2RbBVTCNKXL7de$75969207ac15a7e7c63186bd53b919c17b722a89500a7fc6eb60cb3b20cdef7d', 'Administrador', 'ADMIN', 1),
+('raypac@dml.local', 'pbkdf2:sha256:600000$aSrOi7eCprUIyoPQ$86de1f158beaf6d954e51fc29a03f8e33749c4993ed3327256b821e5a4fab30d', 'RAYPAC', 'RAYPAC', 1),
+('st@dml.local', 'pbkdf2:sha256:600000$e9s0iFVrmBSrJjrm$ceb4166c7790e7664e9e6ec9325a2f737ad0a45b2c0e06615b6432c639e18f1a', 'Servicio Técnico', 'DML_ST', 1),
+('repuestos@dml.local', 'pbkdf2:sha256:600000$SyoM7kdkrIC3rxrS$e5e182cfd55f3482cbc5665339081ec5a90b3234a2d591634bd1ce89ea17cf47', 'Repuestos', 'DML_REPUESTOS', 1);
