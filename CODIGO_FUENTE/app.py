@@ -1,6 +1,7 @@
 import os
 import sys
 import sqlite3
+import csv
 from datetime import datetime, timedelta
 from functools import wraps
 import smtplib
@@ -206,191 +207,149 @@ def init_db():
         print(f"[SEED] ❌ Error cargando datos: {e}", file=sys.stderr, flush=True)
         traceback.print_exc(file=sys.stderr)
 
+def cargar_stock_completo_desde_csv(db):
+    """Carga los 247 repuestos desde el CSV completo"""
+    csv_path = os.path.join(BASE_DIR, "DOCUMENTOS DML", "Copia de NUEVO STOCK DE REPUESTOS COMPLETO.csv")
+    
+    if not os.path.exists(csv_path):
+        print(f"[STOCK CSV] ⚠️  No se encontró: {csv_path}")
+        return 0
+    
+    print(f"[STOCK CSV] 📖 Cargando desde: {csv_path}")
+    
+    repuestos_cargados = 0
+    
+    try:
+        with open(csv_path, 'r', encoding='utf-8') as f:
+            reader = csv.reader(f, delimiter=';')
+            
+            # Saltar las primeras 4 filas (encabezados)
+            for _ in range(4):
+                next(reader, None)
+            
+            for idx, row in enumerate(reader, start=1):
+                if len(row) < 11:
+                    continue
+                
+                # Extraer datos (columnas C a J = índices 2 a 9)
+                codigo = row[2].strip() if len(row) > 2 and row[2] else None
+                item = row[3].strip() if len(row) > 3 and row[3] else None
+                cantidad_str = row[4].strip() if len(row) > 4 and row[4] else "0"
+                codigo_ubicacion = row[9].strip() if len(row) > 9 and row[9] else "SIN UBICACIÓN"
+                
+                # Validaciones
+                if not codigo or not item:
+                    continue
+                
+                # Convertir cantidad
+                try:
+                    cantidad = int(cantidad_str) if cantidad_str else 0
+                except ValueError:
+                    cantidad = 0
+                
+                # 1. Insertar en matriz_repuestos
+                db.execute("""
+                    INSERT OR IGNORE INTO matriz_repuestos 
+                    (numero, codigo_repuesto, item, cantidad_inicial, cantidad_actual, ubicacion)
+                    VALUES (?, ?, ?, ?, ?, 'DML')
+                """, (idx, codigo, item, cantidad, cantidad))
+                
+                # 2. Insertar en stock_ubicaciones (ubicación DML)
+                db.execute("""
+                    INSERT OR IGNORE INTO stock_ubicaciones 
+                    (codigo_repuesto, ubicacion, cantidad, codigo_ubicacion_fisica)
+                    VALUES (?, 'DML', ?, ?)
+                """, (codigo, cantidad, codigo_ubicacion))
+                
+                repuestos_cargados += 1
+                
+                if idx % 50 == 0:
+                    db.commit()
+        
+        db.commit()
+        print(f"[STOCK CSV] ✅ {repuestos_cargados} repuestos cargados")
+        return repuestos_cargados
+        
+    except Exception as e:
+        print(f"[STOCK CSV] ❌ Error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        return 0
+
 def load_seed_data(db=None):
     """Carga datos iniciales en la base de datos - BASADO EN seed_data_minimal.py"""
     if db is None:
         db = get_db()
     
-    # LIMPIAR en orden correcto (hijas primero, padres después)
-    tables = [
-        "ticket_historial", "audit_log", "mail_log", "stock_alertas",
-        "estadisticas_repuestos", "tickets", "dml_repuestos", "dml_partes",
-        "dml_fichas", "envios_repuestos_detalles", "envios_repuestos",
-        "stock_ubicaciones", "stock_dml", "raypac_entries", "matriz_repuestos", "users"
-    ]
-    for table in tables:
-        try:
-            db.execute(f"DELETE FROM {table}")
-        except:
-            pass
-    db.commit()
+    # VERIFICAR SI YA HAY REPUESTOS CARGADOS
+    check_repuestos = db.execute("SELECT COUNT(*) as total FROM matriz_repuestos").fetchone()
+    if check_repuestos and check_repuestos['total'] > 0:
+        print(f"[SEED] ⚠️  Ya hay {check_repuestos['total']} repuestos cargados. Saltando seed.")
+        return
     
-    # 1. USUARIOS
-    usuarios = [
-        ('admin@dml.local', 'admin', 'Administrador', 'ADMIN'),
-        ('raypac@dml.local', 'raypac', 'Casa Matriz RAYPAC', 'RAYPAC'),
-        ('tecnico@dml.local', 'tecnico', 'Juan Pérez', 'DML_ST'),
-        ('repuestos@dml.local', 'repuestos', 'Carlos López', 'DML_REPUESTOS'),
-    ]
+    print("[SEED] 🌱 Cargando datos iniciales completos...")
     
-    for email, pwd, nombre, role in usuarios:
-        db.execute("""
-            INSERT INTO users (email, password_hash, nombre, role, is_active)
-            VALUES (?, ?, ?, ?, 1)
-        """, (email, generate_password_hash(pwd), nombre, role))
-    db.commit()
+    # 1. CARGAR STOCK COMPLETO DESDE CSV (247 repuestos)
+    print("[SEED] 📦 Cargando stock completo desde CSV...")
+    repuestos_count = cargar_stock_completo_desde_csv(db)
     
-    # 2. REPUESTOS EN MATRIZ
-    repuestos = [
-        ("A000001", "MOTOR DE ARRASTRE"),
-        ("A000002", "MOTOR DE SELLADO"),
-        ("A000003", "CUCHILLA SUPERIOR"),
-        ("A000004", "RUEDA DE ARRASTRE"),
-        ("A000005", "CARCAZA FRONTAL"),
-        ("A000006", "SERVO MOTOR"),
-        ("A000007", "RESORTE DE MANIJA"),
-        ("A000008", "BATERIA 12V"),
-        ("A000009", "CARGADOR 220V"),
-        ("A000010", "BOTONERA COMPLETA"),
-    ]
+    if repuestos_count == 0:
+        # Si no se pudo cargar el CSV, usar datos de ejemplo
+        print("[SEED] ⚠️  CSV no disponible, usando repuestos de ejemplo")
+        repuestos = [
+            ("A000001", "MOTOR DE ARRASTRE"),
+            ("A000002", "MOTOR DE SELLADO"),
+            ("A000003", "CUCHILLA SUPERIOR"),
+            ("A000004", "RUEDA DE ARRASTRE"),
+            ("A000005", "CARCAZA FRONTAL"),
+            ("A000006", "SERVO MOTOR"),
+            ("A000007", "RESORTE DE MANIJA"),
+            ("A000008", "BATERIA 12V"),
+            ("A000009", "CARGADOR 220V"),
+            ("A000010", "BOTONERA COMPLETA"),
+        ]
+        
+        for idx, (codigo, item) in enumerate(repuestos, start=1):
+            db.execute("""
+                INSERT INTO matriz_repuestos (numero, codigo_repuesto, item, cantidad_inicial, cantidad_actual, ubicacion)
+                VALUES (?, ?, ?, 0, 0, 'DML')
+            """, (idx, codigo, item))
+        db.commit()
+        
+        # Stock RAYPAC de ejemplo
+        stock_raypac = [
+            ("A000001", 15), ("A000002", 8), ("A000003", 3), ("A000004", 2), ("A000005", 10),
+            ("A000006", 1), ("A000007", 20), ("A000008", 5), ("A000009", 0), ("A000010", 12),
+        ]
+        
+        for codigo, cant in stock_raypac:
+            db.execute("""
+                INSERT INTO stock_ubicaciones (codigo_repuesto, ubicacion, cantidad)
+                VALUES (?, 'RAYPAC', ?)
+            """, (codigo, cant))
+        db.commit()
+        
+        # Stock DML de ejemplo
+        stock_dml = [
+            ("A000001", 5), ("A000002", 3), ("A000003", 2), ("A000004", 1), ("A000005", 4),
+            ("A000006", 0), ("A000007", 8), ("A000008", 2), ("A000009", 3), ("A000010", 6),
+        ]
+        
+        for codigo, cant in stock_dml:
+            db.execute("""
+                INSERT INTO stock_ubicaciones (codigo_repuesto, ubicacion, cantidad)
+                VALUES (?, 'DML', ?)
+            """, (codigo, cant))
+            # Legacy stock_dml para compatibilidad
+            db.execute("""
+                INSERT INTO stock_dml (codigo_repuesto, item, cantidad, cantidad_minima, estado_alerta)
+                SELECT ?, item, ?, 2, 'OK'
+                FROM matriz_repuestos WHERE codigo_repuesto = ?
+            """, (codigo, cant, codigo))
     
-    for idx, (codigo, item) in enumerate(repuestos, start=1):
-        db.execute("""
-            INSERT INTO matriz_repuestos (numero, codigo_repuesto, item, cantidad_inicial, cantidad_actual, ubicacion)
-            VALUES (?, ?, ?, 0, 0, 'DML')
-        """, (idx, codigo, item))
-    db.commit()
-    
-    # 3. STOCK RAYPAC
-    stock_raypac = [
-        ("A000001", 15), ("A000002", 8), ("A000003", 3), ("A000004", 2), ("A000005", 10),
-        ("A000006", 1), ("A000007", 20), ("A000008", 5), ("A000009", 0), ("A000010", 12),
-    ]
-    
-    for codigo, cant in stock_raypac:
-        db.execute("""
-            INSERT INTO stock_ubicaciones (codigo_repuesto, ubicacion, cantidad)
-            VALUES (?, 'RAYPAC', ?)
-        """, (codigo, cant))
-    db.commit()
-    
-    # 4. STOCK DML
-    stock_dml = [
-        ("A000001", 5), ("A000002", 3), ("A000003", 2), ("A000004", 1), ("A000005", 4),
-        ("A000006", 0), ("A000007", 8), ("A000008", 2), ("A000009", 3), ("A000010", 6),
-    ]
-    
-    for codigo, cant in stock_dml:
-        db.execute("""
-            INSERT INTO stock_ubicaciones (codigo_repuesto, ubicacion, cantidad)
-            VALUES (?, 'DML', ?)
-        """, (codigo, cant))
-        # Legacy stock_dml para compatibilidad
-        db.execute("""
-            INSERT INTO stock_dml (codigo_repuesto, item, cantidad, cantidad_minima, estado_alerta)
-            SELECT ?, item, ?, 2, 'OK'
-            FROM matriz_repuestos WHERE codigo_repuesto = ?
-        """, (codigo, cant, codigo))
-    db.commit()
-    
-    # 5. INGRESO RAYPAC #1 (FREEZADO CON REMITO)
-    fecha_hoy = datetime.now().strftime("%Y-%m-%d")
-    fecha_ayer = (datetime.now() - timedelta(days=1)).strftime("%Y-%m-%d")
-    
-    db.execute("""
-        INSERT INTO raypac_entries 
-        (numero_correlativo, fecha_recepcion, tipo_solicitud, cliente, numero_serie,
-         modelo_maquina, tipo_maquina, numero_bateria, numero_cargador,
-         diagnostico_ingreso, comercial, mail_comercial, numero_remito, is_frozen)
-        VALUES (1, ?, 'REPARACION', 'ACME SA', 'EQ-2024-001',
-                'MB380', 'A BATERIA', 'BAT-001', 'CARG-001',
-                'Equipo no enciende, posible falla en motor de arrastre',
-                'María González', 'maria.gonzalez@raypac.com', 'RP-2024-00001', 1)
-    """, (fecha_ayer,))
-    raypac_id_1 = db.execute("SELECT last_insert_rowid() as id").fetchone()['id']
-    db.commit()
-    
-    # 6. FICHA DML #1 CON TICKET
-    numero_ficha_1 = generate_ficha_number()
-    
-    db.execute("""
-        INSERT INTO dml_fichas 
-        (numero_ficha, raypac_id, fecha_ingreso, tecnico, diagnostico_inicial,
-         diagnostico_reparacion, observaciones, estado_reparacion,
-         n_ciclos, tecnico_resp, tipo_trabajo)
-        VALUES (?, ?, ?, 'Juan Pérez', 'Motor de arrastre quemado, requiere reemplazo',
-                'Se reemplazó motor de arrastre y se probó funcionamiento', 
-                'Cliente reporta que el equipo dejó de funcionar tras una sobrecarga',
-                'EN REPARACION', 0, 'Juan Pérez', 'REPARACIÓN')
-    """, (numero_ficha_1, raypac_id_1, fecha_ayer))
-    ficha_id_1 = db.execute("SELECT last_insert_rowid() as id").fetchone()['id']
-    
-    # Crear ticket
-    numero_ticket_1 = crear_ticket(ficha_id_1, 'EQ-2024-001')
-    
-    # Partes del equipo
-    partes = [
-        ('ESTADO DEL EQUIPO', 'INSPECCIONADO'), ('CARCAZA', 'OK'), ('CUBRE FEEDWHEEL', 'OK'),
-        ('MANGO', 'OK'), ('BOTONES', 'OK'), ('MOTOR DE ARRASTRE', 'REEMPLAZADO'),
-        ('MOTOR DE SELLADO', 'OK'), ('CUCHILLA', 'OK'), ('SERVO', 'OK'),
-        ('RUEDA DE ARRASTRE', 'OK'), ('RESORTE DE MANIJA', 'OK'), ('OTROS', 'OK')
-    ]
-    
-    for nombre_parte, estado in partes:
-        db.execute("""
-            INSERT INTO dml_partes (ficha_id, nombre_parte, estado)
-            VALUES (?, ?, ?)
-        """, (ficha_id_1, nombre_parte, estado))
-    
-    # Repuesto utilizado
-    db.execute("""
-        INSERT INTO dml_repuestos 
-        (ficha_id, codigo_repuesto, descripcion, cantidad, cantidad_utilizada,
-         estado_repuesto, en_stock, en_falta)
-        VALUES (?, 'A000001', 'MOTOR DE ARRASTRE', 1, 1, 'EN STOCK', 1, 0)
-    """, (ficha_id_1,))
-    
-    # Estadística de uso
-    db.execute("""
-        INSERT INTO estadisticas_repuestos 
-        (codigo_repuesto, item, cantidad_utilizada, fecha_ultimo_uso, total_usos)
-        VALUES ('A000001', 'MOTOR DE ARRASTRE', 1, ?, 1)
-    """, (fecha_ayer,))
-    
-    db.commit()
-    
-    # 7. INGRESO RAYPAC #2 (SIN REMITO, EDITABLE)
-    db.execute("""
-        INSERT INTO raypac_entries 
-        (numero_correlativo, fecha_recepcion, tipo_solicitud, cliente, numero_serie,
-         modelo_maquina, tipo_maquina, numero_bateria, numero_cargador,
-         diagnostico_ingreso, comercial, mail_comercial, is_frozen)
-        VALUES (2, ?, 'REPARACION', 'TechCorp SRL', 'EQ-2024-002',
-                'MB450', 'ELECTRICA', NULL, NULL,
-                'Cuchilla desgastada, requiere afilado o reemplazo',
-                'Pedro Martínez', 'pedro.martinez@raypac.com', 0)
-    """, (fecha_hoy,))
-    db.commit()
-    
-    # 8. ENVÍO RAYPAC→DML (RECIBIDO)
-    fecha_hace_2_dias = (datetime.now() - timedelta(days=2)).strftime("%Y-%m-%d")
-    
-    db.execute("""
-        INSERT INTO envios_repuestos 
-        (numero_remito, fecha_envio, fecha_recepcion, estado)
-        VALUES ('RP-2024-00100', ?, ?, 'RECIBIDO')
-    """, (fecha_hace_2_dias, fecha_ayer))
-    envio_id = db.execute("SELECT last_insert_rowid() as id").fetchone()['id']
-    
-    detalles_envio = [('A000002', 2), ('A000007', 5)]
-    
-    for codigo, cant in detalles_envio:
-        db.execute("""
-            INSERT INTO envios_repuestos_detalles (envio_id, codigo_repuesto, cantidad)
-            VALUES (?, ?, ?)
-        """, (envio_id, codigo, cant))
-    
-    db.commit()
+    # DATOS DE EJEMPLO REMOVIDOS - Solo CSV carga permanente
+    print(f"[SEED] ✅ {repuestos_count} repuestos cargados desde CSV")
+    print("[SEED] Sistema listo para usar")
 
 # ======================== HELPERS ========================
 

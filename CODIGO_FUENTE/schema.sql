@@ -271,60 +271,8 @@ CREATE TABLE freezing_log (
 );
 
 -- ======================== STOCK INICIAL ========================
-
-INSERT INTO matriz_repuestos (numero, codigo_repuesto, item, cantidad_inicial, cantidad_actual, ubicacion) VALUES
-(1, 'A000001', 'CARCAZA FRONTAL', 5, 5, 'DML'),
-(2, 'A000002', 'CARCAZA TRASERA', 5, 5, 'DML'),
-(3, 'A000003', 'TENSION MOTOR PRINCIPAL', 3, 3, 'DML'),
-(4, 'A000004', 'TENSION MOTOR SECUNDARIO', 3, 3, 'DML'),
-(5, 'B000001', 'BATERIA LITIO ITA24', 8, 8, 'DML'),
-(6, 'B000002', 'BATERIA NIQUEL ITA10', 5, 5, 'DML'),
-(7, 'C000001', 'CARGADOR RAPIDO', 4, 4, 'DML'),
-(8, 'C000002', 'CABLE USB', 10, 10, 'DML'),
-(9, 'M000001', 'MOTOR ARRASTRE PRINCIPAL', 2, 2, 'DML'),
-(10, 'M000002', 'MOTOR ARRASTRE SECUNDARIO', 2, 2, 'DML'),
-(11, 'S000001', 'SERVO MOTOR IZQUIERDO', 3, 3, 'DML'),
-(12, 'S000002', 'SERVO MOTOR DERECHO', 3, 3, 'DML'),
-(13, 'E000001', 'EJE RUEDA DELANTERA', 2, 2, 'DML'),
-(14, 'E000002', 'EJE RUEDA TRASERA', 2, 2, 'DML'),
-(15, 'R000001', 'RESORTE MANIJA IZQUIERDA', 4, 2, 'DML'),
-(16, 'R000002', 'RESORTE MANIJA DERECHA', 4, 3, 'DML'),
-(17, 'K000001', 'KIT COMPLETO CUCHILLAS', 6, 6, 'DML'),
-(18, 'K000002', 'KIT SELLADO MOTOR', 3, 3, 'DML'),
-(19, 'P000001', 'PULSADOR INICIO', 8, 8, 'DML'),
-(20, 'P000002', 'PULSADOR PARADA', 8, 8, 'DML');
-
-INSERT INTO stock_dml (codigo_repuesto, item, cantidad, cantidad_minima, estado_alerta) VALUES
-('A000001', 'CARCAZA FRONTAL', 5, 2, 'OK'),
-('A000002', 'CARCAZA TRASERA', 5, 2, 'OK'),
-('A000003', 'TENSION MOTOR PRINCIPAL', 3, 2, 'OK'),
-('A000004', 'TENSION MOTOR SECUNDARIO', 3, 2, 'OK'),
-('B000001', 'BATERIA LITIO ITA24', 8, 3, 'OK'),
-('B000002', 'BATERIA NIQUEL ITA10', 5, 2, 'OK'),
-('C000001', 'CARGADOR RAPIDO', 4, 2, 'OK'),
-('C000002', 'CABLE USB', 10, 5, 'OK'),
-('M000001', 'MOTOR ARRASTRE PRINCIPAL', 2, 1, 'AMARILLO'),
-('M000002', 'MOTOR ARRASTRE SECUNDARIO', 2, 1, 'AMARILLO'),
-('S000001', 'SERVO MOTOR IZQUIERDO', 3, 2, 'OK'),
-('S000002', 'SERVO MOTOR DERECHO', 3, 2, 'OK'),
-('E000001', 'EJE RUEDA DELANTERA', 2, 1, 'AMARILLO'),
-('E000002', 'EJE RUEDA TRASERA', 2, 1, 'AMARILLO'),
-('R000001', 'RESORTE MANIJA IZQUIERDA', 2, 2, 'AMARILLO'),
-('R000002', 'RESORTE MANIJA DERECHA', 3, 2, 'OK'),
-('K000001', 'KIT COMPLETO CUCHILLAS', 6, 3, 'OK'),
-('K000002', 'KIT SELLADO MOTOR', 3, 2, 'OK'),
-('P000001', 'PULSADOR INICIO', 8, 4, 'OK'),
-('P000002', 'PULSADOR PARADA', 8, 4, 'OK');
-
-INSERT INTO stock_ubicaciones (codigo_repuesto, ubicacion, cantidad) VALUES
-('A000001', 'DML', 5),
-('A000002', 'DML', 5),
-('A000003', 'DML', 3),
-('A000004', 'DML', 3),
-('B000001', 'DML', 8),
-('B000002', 'DML', 5),
-('C000001', 'DML', 4),
-('C000002', 'DML', 10);
+-- Los repuestos se cargan automáticamente desde CSV en load_seed_data()
+-- Comentado para evitar duplicados con el CSV completo
 
 -- ======================== USUARIOS INICIALES ========================
 
