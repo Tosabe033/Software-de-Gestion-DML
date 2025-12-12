@@ -7,6 +7,13 @@
     <div class="row mb-4">
         <div class="col-md-6">
             <h2>Ingresos RAYPAC</h2>
+            {% set maquinas_listas = entries | selectattr('estado_ficha', 'equalto', 'MÁQUINA LISTA PARA RETIRAR') | list | length %}
+            {% if maquinas_listas > 0 %}
+            <div class="alert alert-success mt-2 mb-0" role="alert">
+                <i class="fas fa-check-circle"></i> 
+                <strong>{{ maquinas_listas }}</strong> máquina{{ 's' if maquinas_listas > 1 else '' }} lista{{ 's' if maquinas_listas > 1 else '' }} para retirar
+            </div>
+            {% endif %}
         </div>
         <div class="col-md-6 text-right">
             {% if session.get('user_id') and not readonly and user_role in ['ADMIN', 'RAYPAC'] %}
