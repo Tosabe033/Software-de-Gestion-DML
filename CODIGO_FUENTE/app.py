@@ -1038,10 +1038,10 @@ def index():
         """).fetchone()['total']
         
         stats = {
-            "fichas_revision_inicial": count("SELECT COUNT(*) AS total FROM dml_fichas WHERE estado_reparacion = 'A LA ESPERA DE REVISIÓN'"),
-            "fichas_en_reparacion": count("SELECT COUNT(*) AS total FROM dml_fichas WHERE estado_reparacion = 'EN REPARACIÓN'"),
-            "fichas_espera_repuestos": count("SELECT COUNT(*) AS total FROM dml_fichas WHERE estado_reparacion = 'A LA ESPERA DE REPUESTOS'"),
-            "fichas_listas": count("SELECT COUNT(*) AS total FROM dml_fichas WHERE estado_reparacion = 'MÁQUINA LISTA PARA RETIRAR'"),
+            "fichas_revision_inicial": count("SELECT COUNT(*) AS total FROM dml_fichas WHERE estado_reparacion LIKE 'A LA ESPERA DE REVISI_N' AND is_closed = 0"),
+            "fichas_en_reparacion": count("SELECT COUNT(*) AS total FROM dml_fichas WHERE estado_reparacion LIKE 'EN REPARACI_N' AND is_closed = 0"),
+            "fichas_espera_repuestos": count("SELECT COUNT(*) AS total FROM dml_fichas WHERE estado_reparacion = 'A LA ESPERA DE REPUESTOS' AND is_closed = 0"),
+            "fichas_listas": count("SELECT COUNT(*) AS total FROM dml_fichas WHERE estado_reparacion LIKE 'M_QUINA LISTA PARA RETIRAR' AND is_closed = 0"),
             "equipos_raypac_pendientes": equipos_pendientes,
             "tickets_activos": count("SELECT COUNT(*) AS total FROM tickets WHERE estado != 'CERRADO'"),
             "repuestos_disponibles": repuestos_disponibles
