@@ -71,7 +71,7 @@
                 <small class="text-muted"><em>Solo ADMIN puede desfreezar</em></small>
                 {% endif %}
                 {% else %}
-                <strong>Pendiente de Freezar</strong> - Requiere N° de Remito (formato 0000-0000) para envío a ST
+                <strong>Pendiente de Freezar</strong> - Requiere N° de Remito para envío a ST
                 {% endif %}
             </div>
         </div>
@@ -85,8 +85,9 @@
             
             {% if not entry.is_frozen %}
             <form method="POST" action="{{ url_for('raypac_freeze', id=entry.id) }}" class="d-inline">
-                <input type="text" name="numero_remito" class="form-control d-inline-block" style="width: auto;" placeholder="Ej: 0000-0001" pattern="[0-9]{4}-[0-9]{4}" required title="Formato: 4 números - guión - 4 números (Ej: 0000-0001, 1234-5678)">
+                <input type="text" name="numero_remito" class="form-control d-inline-block" style="width: auto;" placeholder="Ej: 4222" pattern="[0-9]{1,5}" maxlength="5" required title="Ingresa solo los últimos 4 dígitos (Ej: 4222). El sistema lo convertirá a formato 00001-04222">
                 <button type="submit" class="btn btn-success">Freezar y Enviar a ST</button>
+                <small class="text-muted d-block mt-1">💡 Ingresa solo los últimos 4 dígitos del remito (Ej: 4222 → se guarda como 00001-04222)</small>
             </form>
             {% endif %}
             {% elif readonly %}
