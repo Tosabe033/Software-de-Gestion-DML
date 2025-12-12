@@ -193,7 +193,7 @@ def migrate_db():
         CORRECT_HASHES = {
             'admin@dml.local': 'pbkdf2:sha256:600000$6A2RbBVTCNKXL7de$75969207ac15a7e7c63186bd53b919c17b722a89500a7fc6eb60cb3b20cdef7d',
             'raypac@dml.local': 'pbkdf2:sha256:600000$aSrOi7eCprUIyoPQ$86de1f158beaf6d954e51fc29a03f8e33749c4993ed3327256b821e5a4fab30d',
-            'st@dml.local': 'pbkdf2:sha256:600000$e9s0iFVrmBSrJjrm$ceb4166c7790e7664e9e6ec9325a2f737ad0a45b2c0e06615b6432c639e18f1a',
+            'st@dml.local': 'pbkdf2:sha256:600000$bQ5PGbB2osS0xFi3$9cc5715d44a91e16db07e75d67842d981132af4d2d385164d2c5c0a906c3b8a7',
             'repuestos@dml.local': 'pbkdf2:sha256:600000$SyoM7kdkrIC3rxrS$e5e182cfd55f3482cbc5665339081ec5a90b3234a2d591634bd1ce89ea17cf47'
         }
         
@@ -298,7 +298,19 @@ def cargar_stock_completo_desde_csv(db):
                     db.commit()
         
         db.commit()
-        print(f"[STOCK CSV] ✅ {repuestos_cargados} repuestos cargados")
+        
+        # 3. Inicializar stock RAYPAC con cantidades desde matriz_repuestos
+        print("[STOCK CSV] 📦 Inicializando stock RAYPAC...")
+        db.execute("""
+            INSERT OR IGNORE INTO stock_ubicaciones (codigo_repuesto, ubicacion, cantidad, codigo_ubicacion_fisica)
+            SELECT codigo_repuesto, 'RAYPAC', cantidad_actual, 'SIN UBICACIÓN'
+            FROM matriz_repuestos
+            WHERE codigo_repuesto NOT IN (SELECT codigo_repuesto FROM stock_ubicaciones WHERE ubicacion = 'RAYPAC')
+        """)
+        db.commit()
+        
+        raypac_count = db.execute("SELECT COUNT(*) as total FROM stock_ubicaciones WHERE ubicacion = 'RAYPAC'").fetchone()['total']
+        print(f"[STOCK CSV] ✅ {repuestos_cargados} repuestos cargados en DML, {raypac_count} en RAYPAC")
         return repuestos_cargados
         
     except Exception as e:

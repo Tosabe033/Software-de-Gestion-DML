@@ -280,5 +280,5 @@ CREATE TABLE freezing_log (
 INSERT INTO users (email, password_hash, nombre, role, is_active) VALUES
 ('admin@dml.local', 'pbkdf2:sha256:600000$6A2RbBVTCNKXL7de$75969207ac15a7e7c63186bd53b919c17b722a89500a7fc6eb60cb3b20cdef7d', 'Administrador', 'ADMIN', 1),
 ('raypac@dml.local', 'pbkdf2:sha256:600000$aSrOi7eCprUIyoPQ$86de1f158beaf6d954e51fc29a03f8e33749c4993ed3327256b821e5a4fab30d', 'RAYPAC', 'RAYPAC', 1),
-('st@dml.local', 'pbkdf2:sha256:600000$e9s0iFVrmBSrJjrm$ceb4166c7790e7664e9e6ec9325a2f737ad0a45b2c0e06615b6432c639e18f1a', 'Servicio Técnico', 'DML_ST', 1),
+('st@dml.local', 'pbkdf2:sha256:600000$bQ5PGbB2osS0xFi3$9cc5715d44a91e16db07e75d67842d981132af4d2d385164d2c5c0a906c3b8a7', 'Servicio Técnico', 'DML_ST', 1),
 ('repuestos@dml.local', 'pbkdf2:sha256:600000$SyoM7kdkrIC3rxrS$e5e182cfd55f3482cbc5665339081ec5a90b3234a2d591634bd1ce89ea17cf47', 'Repuestos', 'DML_REPUESTOS', 1);
