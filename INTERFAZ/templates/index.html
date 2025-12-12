@@ -408,4 +408,16 @@
     </div>
     {% endif %}
 </div>
+
+<script>
+// Auto-refresh cada 45 segundos para sincronización en tiempo real
+setTimeout(function() {
+    location.reload();
+}, 45000);
+
+// Mostrar última actualización
+const ahora = new Date();
+const hora = ahora.toLocaleTimeString('es-AR', {hour: '2-digit', minute: '2-digit', second: '2-digit'});
+console.log('Dashboard actualizado a las ' + hora);
+</script>
 {% endblock %}

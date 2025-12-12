@@ -47,5 +47,16 @@
   {% else %}
   <div class="alert alert-info">No hay envíos registrados.</div>
   {% endif %}
+  
+  <div class="text-muted text-center mt-3 small">
+    <i class="bi bi-arrow-clockwise"></i> Actualización automática cada 45 segundos
+  </div>
 </div>
+
+<script>
+// Auto-refresh cada 45 segundos
+setTimeout(function() {
+    location.reload();
+}, 45000);
+</script>
 {% endblock %}
