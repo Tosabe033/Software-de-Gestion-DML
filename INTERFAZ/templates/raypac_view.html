@@ -65,7 +65,7 @@
             
             {% if not entry.is_frozen %}
             <form method="POST" action="{{ url_for('raypac_freeze', id=entry.id) }}" class="d-inline">
-                <input type="text" name="numero_remito" class="form-control d-inline-block" style="width: auto;" placeholder="Ej: 0000-0001" pattern="\\d{4}-\\d{4}" required title="Formato: 4 dígitos - guión - 4 dígitos (Ej: 0000-0001, 1234-5678)">
+                <input type="text" name="numero_remito" class="form-control d-inline-block" style="width: auto;" placeholder="Ej: 0000-0001" pattern="[0-9]{4}-[0-9]{4}" required title="Formato: 4 números - guión - 4 números (Ej: 0000-0001, 1234-5678)">
                 <button type="submit" class="btn btn-success">Freezar y Enviar a ST</button>
             </form>
             {% endif %}
