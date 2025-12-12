@@ -76,7 +76,17 @@
                             <strong style="color: black;">{{ row.cantidad }}</strong>
                         </td>
                         <td>
-                            {{ get_alert_badge(row.codigo_repuesto, row.ubicacion) | safe }}
+                            {% if row.alerta == 'ROJO' %}
+                            <span class="badge bg-danger">🔴 ROJO</span>
+                            {% elif row.alerta == 'AMARILLO' %}
+                            <span class="badge bg-warning text-dark">⚠️ AMARILLO</span>
+                            {% elif row.alerta == 'NARANJA' %}
+                            <span class="badge bg-warning text-dark">⚠️ NARANJA</span>
+                            {% elif row.alerta == 'OK' %}
+                            <span class="badge bg-success">✅ OK</span>
+                            {% else %}
+                            <span class="badge bg-secondary">N/A</span>
+                            {% endif %}
                         </td>
                         {% if user.role in ['ADMIN', 'DML_REPUESTOS', 'RAYPAC'] %}
                         <td>
