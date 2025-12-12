@@ -89,6 +89,15 @@ def migrate_db():
             db.execute("ALTER TABLE dml_repuestos ADD COLUMN estado_repuesto TEXT DEFAULT 'INSPECCIONADO'")
             db.commit()
         
+        # Verificar si codigo_ubicacion_fisica existe en stock_ubicaciones
+        cursor = db.execute("PRAGMA table_info(stock_ubicaciones)")
+        columns_stock = [row[1] for row in cursor.fetchall()]
+        
+        if 'codigo_ubicacion_fisica' not in columns_stock:
+            db.execute("ALTER TABLE stock_ubicaciones ADD COLUMN codigo_ubicacion_fisica TEXT DEFAULT 'SIN UBICACIÓN'")
+            db.commit()
+            print("[MIGRATION] Agregada columna codigo_ubicacion_fisica a stock_ubicaciones")
+        
         # Crear tabla tickets si no existe
         db.execute("""
             CREATE TABLE IF NOT EXISTS tickets (

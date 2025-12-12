@@ -81,17 +81,19 @@ def cargar_stock_desde_csv():
                 existe_matriz = cursor.fetchone()
                 
                 if not existe_matriz:
+                    # Generar número correlativo (usar el índice actual + 1)
+                    numero_correlativo = idx + 1
                     cursor.execute("""
-                        INSERT INTO matriz_repuestos (codigo_repuesto, item)
-                        VALUES (?, ?)
-                    """, (codigo, item))
+                        INSERT INTO matriz_repuestos (numero, codigo_repuesto, item, cantidad_inicial, cantidad_actual, ubicacion)
+                        VALUES (?, ?, ?, ?, ?, 'DML')
+                    """, (numero_correlativo, codigo, item, cantidad, cantidad))
                     repuestos_cargados += 1
                 else:
                     cursor.execute("""
                         UPDATE matriz_repuestos 
-                        SET item = ?
+                        SET item = ?, cantidad_actual = ?
                         WHERE codigo_repuesto = ?
-                    """, (item, codigo))
+                    """, (item, cantidad, codigo))
                     repuestos_actualizados += 1
                 
                 # 2. Insertar o actualizar en stock_ubicaciones (ubicación DML)
