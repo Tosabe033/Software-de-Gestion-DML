@@ -250,14 +250,68 @@ def migrate_db():
             db.execute("ALTER TABLE dml_fichas ADD COLUMN ticket_id INTEGER REFERENCES tickets(id)")
             print("[MIGRATION] ✅ Columna ticket_id agregada a dml_fichas")
         
-        # Nota: ficha_id en tickets ya existe pero ahora será opcional (no se puede modificar constraint en SQLite)
-        # Los tickets nuevos tendrán ficha_id = NULL hasta que se cree la ficha
+        # FIX CRÍTICO: En SQLite no se puede modificar constraint NOT NULL directamente
+        # Necesitamos recrear la tabla si ficha_id es NOT NULL
+        # Verificar si necesitamos migrar la tabla
+        try:
+            # Intentar insertar un ticket de prueba con ficha_id NULL
+            db.execute("INSERT INTO tickets (numero_ticket, numero_serie, estado, ficha_id, raypac_id) VALUES ('TEST-MIGRATION', 'TEST', 'ACTIVO', NULL, NULL)")
+            db.execute("DELETE FROM tickets WHERE numero_ticket = 'TEST-MIGRATION'")
+            print("[MIGRATION] ✅ Tabla tickets ya permite ficha_id NULL")
+        except Exception as test_error:
+            if "NOT NULL constraint failed" in str(test_error):
+                print("[MIGRATION] ⚠️  Detectado constraint NOT NULL en ficha_id. Recreando tabla tickets...")
+                
+                # Respaldar datos existentes
+                db.execute("""
+                    CREATE TABLE tickets_backup AS 
+                    SELECT id, numero_ticket, ficha_id, numero_serie, estado, 
+                           fecha_creacion, fecha_cierre, created_at, updated_at, raypac_id
+                    FROM tickets
+                """)
+                
+                # Eliminar tabla original
+                db.execute("DROP TABLE tickets")
+                
+                # Recrear tabla con ficha_id NULLABLE
+                db.execute("""
+                    CREATE TABLE tickets (
+                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                        numero_ticket TEXT UNIQUE NOT NULL,
+                        ficha_id INTEGER,
+                        numero_serie TEXT NOT NULL,
+                        estado TEXT DEFAULT 'ACTIVO',
+                        fecha_creacion TEXT DEFAULT CURRENT_TIMESTAMP,
+                        fecha_cierre TEXT,
+                        created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                        updated_at TEXT DEFAULT CURRENT_TIMESTAMP,
+                        raypac_id INTEGER REFERENCES raypac_entries(id),
+                        FOREIGN KEY(ficha_id) REFERENCES dml_fichas(id) ON DELETE CASCADE,
+                        UNIQUE(numero_ticket)
+                    )
+                """)
+                
+                # Restaurar datos
+                db.execute("""
+                    INSERT INTO tickets 
+                    (id, numero_ticket, ficha_id, numero_serie, estado, fecha_creacion, fecha_cierre, created_at, updated_at, raypac_id)
+                    SELECT id, numero_ticket, ficha_id, numero_serie, estado, fecha_creacion, fecha_cierre, created_at, updated_at, raypac_id
+                    FROM tickets_backup
+                """)
+                
+                # Eliminar backup
+                db.execute("DROP TABLE tickets_backup")
+                
+                print("[MIGRATION] ✅ Tabla tickets recreada con ficha_id NULLABLE")
+            else:
+                raise test_error
         
         db.commit()
         print("[MIGRATION] ✅ Flujo Ticket → Ficha configurado")
         
     except Exception as e:
         print(f"[MIGRATION] ⚠️  Error en migración de flujo: {e}")
+        db.rollback()
         db.commit()
     
     # Migración: Agregar tipo_entrega a envios_repuestos
